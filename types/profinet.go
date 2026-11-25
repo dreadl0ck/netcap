@@ -222,11 +222,17 @@ func (p *PROFINET) SetPacketContext(ctx *PacketContext) {
 
 // Src returns the source address of the audit record.
 func (p *PROFINET) Src() string {
+	if p.SrcIP == "" {
+		return p.Context.GetSrcMAC()
+	}
 	return p.SrcIP
 }
 
 // Dst returns the destination address of the audit record.
 func (p *PROFINET) Dst() string {
+	if p.DstIP == "" {
+		return p.Context.GetDstMAC()
+	}
 	return p.DstIP
 }
 

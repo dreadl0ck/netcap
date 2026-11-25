@@ -19,8 +19,8 @@ for name in 'PTPv2 GOOSE SampledValues EtherCAT OPCUAPubSub IEC104 MMS AMS'.spli
     out += f'''
 var metric{name} = prometheus.NewCounter(prometheus.CounterOpts{{Name:"nc_{name.lower()}", Help:"Decoded {name} records"}})
 func (r *{name}) Time() int64 {{return r.Timestamp}}
-func (r *{name}) Src() string {{return r.Context.GetSrcIP()}}
-func (r *{name}) Dst() string {{return r.Context.GetDstIP()}}
+func (r *{name}) Src() string {{if ip:=r.Context.GetSrcIP(); ip!="" {{return ip}};return r.Context.GetSrcMAC()}}
+func (r *{name}) Dst() string {{if ip:=r.Context.GetDstIP(); ip!="" {{return ip}};return r.Context.GetDstMAC()}}
 func (r *{name}) SetPacketContext(c *PacketContext) {{if c != nil {{v:=*c; r.Context=&v}}}}
 func (*{name}) Analyze() {{}}
 func (*{name}) NetcapType() Type {{return Type_NC_{name}}}

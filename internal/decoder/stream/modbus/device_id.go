@@ -2,8 +2,10 @@ package modbus
 
 import (
 	"bytes"
-	"github.com/dreadl0ck/netcap/types"
+
 	"github.com/gopacket/gopacket/layers"
+
+	"github.com/dreadl0ck/netcap/types"
 )
 
 type devicePage struct {
@@ -38,10 +40,18 @@ func (ids *deviceIDs) observe(r *types.Modbus, wire []byte) {
 		delete(*ids, key)
 		return
 	}
+	for k, page := range *ids {
+		if r.Timestamp < page.at || uint64(r.Timestamp)-uint64(page.at) > uint64(requestTimeout) {
+			delete(*ids, k)
+		}
+	}
 	page := (*ids)[key]
-	if page != nil && (r.Timestamp < page.at || r.Timestamp-page.at > requestTimeout) {
-		delete(*ids, key)
-		page = nil
+	if page != nil {
+		_, next, ok := page.info.Next()
+		if !ok || uint32(next) != r.DeviceIDObjectID {
+			delete(*ids, key)
+			page = nil
+		}
 	}
 	if page == nil {
 		if r.DeviceIDObjectID != 0 && r.ReadDeviceIDCode != 4 {

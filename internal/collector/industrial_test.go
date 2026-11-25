@@ -27,7 +27,7 @@ func TestIndustrialReplay(t *testing.T) {
 		{"ptpv2.pcap", "PTPv2", func() proto.Message { return new(types.PTPv2) }, 39, func(m proto.Message) bool { return m.(*types.PTPv2).SequenceID == 1118 }},
 		{"iec61850_goose_vlan.pcap", "GOOSE", func() proto.Message { return new(types.GOOSE) }, 1, func(m proto.Message) bool {
 			r := m.(*types.GOOSE)
-			return r.State == 1 && r.ControlBlock != "" && strings.Contains(r.Context.GetNetworkScope(), "vlan:")
+			return r.State == 1 && r.ControlBlock != "" && r.Src() != "" && r.Dst() != "" && strings.Contains(r.Context.GetNetworkScope(), "vlan:")
 		}},
 		{"iec61850_sv_multi_asdu.pcap", "SampledValues", func() proto.Message { return new(types.SampledValues) }, 20, func(m proto.Message) bool {
 			return slices.Equal(m.(*types.SampledValues).SampleCounter, []uint32{27220, 27221, 27222, 27223, 27224})
@@ -41,6 +41,26 @@ func TestIndustrialReplay(t *testing.T) {
 			return r.UFunction != "" && r.Assembly.GetStatus() == "complete"
 		}},
 		{"iec61850_mms.pcap", "MMS", func() proto.Message { return new(types.MMS) }, 163, func(m proto.Message) bool { r := m.(*types.MMS); return r.InvokeID == 4431 && r.Service != "" }},
+		{"opcua-read.pcap", "OPCUA", func() proto.Message { return new(types.OPCUA) }, 18, func(m proto.Message) bool {
+			r := m.(*types.OPCUA)
+			return r.ServiceName == "ReadRequest" && r.IsRequest && r.Assembly.GetStatus() == "complete"
+		}},
+		{"opcua-encrypted.pcap", "OPCUA", func() proto.Message { return new(types.OPCUA) }, 14, func(m proto.Message) bool {
+			r := m.(*types.OPCUA)
+			return r.MessageType == "MSG" && r.Assembly.GetStatus() == "opaque" && r.ServiceName == "" && r.RequestId == 0 && len(r.Payload) == 0
+		}},
+		{"profinet-dcp.pcap", "PROFINET", func() proto.Message { return new(types.PROFINET) }, 24, func(m proto.Message) bool {
+			r := m.(*types.PROFINET)
+			return r.StationName == "X208-BORD" && r.VendorID == "0x002a" && r.DeviceID == "0x0a01" && r.Src() != ""
+		}},
+		{"bacnet-vectors-ipv6.pcap", "BACnetIP", func() proto.Message { return new(types.BACnetIP) }, 6, func(m proto.Message) bool {
+			r := m.(*types.BACnetIP)
+			return r.Carrier == "BACnet/IPv6" && strings.Contains(r.SrcIP, ":") && r.BVLCType == 0x82
+		}},
+		{"bacnet-segmented.pcap", "BACnetIP", func() proto.Message { return new(types.BACnetIP) }, 5, func(m proto.Message) bool {
+			r := m.(*types.BACnetIP)
+			return r.SegmentedMessage == 1 && r.InvokeID == 1 && r.Assembly.GetStatus() == "complete" && r.Assembly.Pieces > 1 && r.ServiceName == "ReadRange"
+		}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			path := filepath.Join(strings.TrimSpace(string(root)), "layers/testdata", tc.file)

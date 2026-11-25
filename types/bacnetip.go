@@ -128,7 +128,11 @@ func (b *BACnetIP) CSVHeader() []string {
 
 // CSVRecord returns the CSV record for the audit record.
 func (b *BACnetIP) CSVRecord() []string {
-	return filter([]string{
+	return filter(b.csvValues())
+}
+
+func (b *BACnetIP) csvValues() []string {
+	return []string{
 		formatTimestamp(b.Timestamp),
 		b.SrcIP,
 		b.DstIP,
@@ -176,7 +180,7 @@ func (b *BACnetIP) CSVRecord() []string {
 		strconv.FormatBool(b.IsCriticalOperation),
 		strings.Join(b.ParseQualifications, ";"),
 		dnp3JSONCell(b.Assembly), b.Carrier, formatUint32(b.SCMessageID), b.LinkSource, b.LinkDestination, b.NetworkScope,
-	})
+	}
 }
 
 // Time returns the timestamp associated with the audit record.
@@ -202,7 +206,7 @@ var bacnetipMetric = prometheus.NewCounterVec(
 
 // Inc increments the metrics for the audit record.
 func (b *BACnetIP) Inc() {
-	bacnetipMetric.WithLabelValues(b.CSVRecord()[1 : len(fieldsBACnetIP)-6]...).Inc()
+	bacnetipMetric.WithLabelValues(b.csvValues()[1 : len(fieldsBACnetIP)-6]...).Inc()
 }
 
 // SetPacketContext sets the associated packet context for the audit record.
@@ -215,11 +219,17 @@ func (b *BACnetIP) SetPacketContext(ctx *PacketContext) {
 
 // Src returns the source address of the audit record.
 func (b *BACnetIP) Src() string {
+	if b.SrcIP == "" {
+		return b.LinkSource
+	}
 	return b.SrcIP
 }
 
 // Dst returns the destination address of the audit record.
 func (b *BACnetIP) Dst() string {
+	if b.DstIP == "" {
+		return b.LinkDestination
+	}
 	return b.DstIP
 }
 

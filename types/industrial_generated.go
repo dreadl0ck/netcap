@@ -13,8 +13,18 @@ var otEncoder = encoder.NewValueEncoder()
 var metricPTPv2 = prometheus.NewCounter(prometheus.CounterOpts{Name: "nc_ptpv2", Help: "Decoded PTPv2 records"})
 
 func (r *PTPv2) Time() int64 { return r.Timestamp }
-func (r *PTPv2) Src() string { return r.Context.GetSrcIP() }
-func (r *PTPv2) Dst() string { return r.Context.GetDstIP() }
+func (r *PTPv2) Src() string {
+	if ip := r.Context.GetSrcIP(); ip != "" {
+		return ip
+	}
+	return r.Context.GetSrcMAC()
+}
+func (r *PTPv2) Dst() string {
+	if ip := r.Context.GetDstIP(); ip != "" {
+		return ip
+	}
+	return r.Context.GetDstMAC()
+}
 func (r *PTPv2) SetPacketContext(c *PacketContext) {
 	if c != nil {
 		v := *c
@@ -50,8 +60,18 @@ func (r *PTPv2) Encode() []string {
 var metricGOOSE = prometheus.NewCounter(prometheus.CounterOpts{Name: "nc_goose", Help: "Decoded GOOSE records"})
 
 func (r *GOOSE) Time() int64 { return r.Timestamp }
-func (r *GOOSE) Src() string { return r.Context.GetSrcIP() }
-func (r *GOOSE) Dst() string { return r.Context.GetDstIP() }
+func (r *GOOSE) Src() string {
+	if ip := r.Context.GetSrcIP(); ip != "" {
+		return ip
+	}
+	return r.Context.GetSrcMAC()
+}
+func (r *GOOSE) Dst() string {
+	if ip := r.Context.GetDstIP(); ip != "" {
+		return ip
+	}
+	return r.Context.GetDstMAC()
+}
 func (r *GOOSE) SetPacketContext(c *PacketContext) {
 	if c != nil {
 		v := *c
@@ -87,8 +107,18 @@ func (r *GOOSE) Encode() []string {
 var metricSampledValues = prometheus.NewCounter(prometheus.CounterOpts{Name: "nc_sampledvalues", Help: "Decoded SampledValues records"})
 
 func (r *SampledValues) Time() int64 { return r.Timestamp }
-func (r *SampledValues) Src() string { return r.Context.GetSrcIP() }
-func (r *SampledValues) Dst() string { return r.Context.GetDstIP() }
+func (r *SampledValues) Src() string {
+	if ip := r.Context.GetSrcIP(); ip != "" {
+		return ip
+	}
+	return r.Context.GetSrcMAC()
+}
+func (r *SampledValues) Dst() string {
+	if ip := r.Context.GetDstIP(); ip != "" {
+		return ip
+	}
+	return r.Context.GetDstMAC()
+}
 func (r *SampledValues) SetPacketContext(c *PacketContext) {
 	if c != nil {
 		v := *c
@@ -124,8 +154,18 @@ func (r *SampledValues) Encode() []string {
 var metricEtherCAT = prometheus.NewCounter(prometheus.CounterOpts{Name: "nc_ethercat", Help: "Decoded EtherCAT records"})
 
 func (r *EtherCAT) Time() int64 { return r.Timestamp }
-func (r *EtherCAT) Src() string { return r.Context.GetSrcIP() }
-func (r *EtherCAT) Dst() string { return r.Context.GetDstIP() }
+func (r *EtherCAT) Src() string {
+	if ip := r.Context.GetSrcIP(); ip != "" {
+		return ip
+	}
+	return r.Context.GetSrcMAC()
+}
+func (r *EtherCAT) Dst() string {
+	if ip := r.Context.GetDstIP(); ip != "" {
+		return ip
+	}
+	return r.Context.GetDstMAC()
+}
 func (r *EtherCAT) SetPacketContext(c *PacketContext) {
 	if c != nil {
 		v := *c
@@ -161,8 +201,18 @@ func (r *EtherCAT) Encode() []string {
 var metricOPCUAPubSub = prometheus.NewCounter(prometheus.CounterOpts{Name: "nc_opcuapubsub", Help: "Decoded OPCUAPubSub records"})
 
 func (r *OPCUAPubSub) Time() int64 { return r.Timestamp }
-func (r *OPCUAPubSub) Src() string { return r.Context.GetSrcIP() }
-func (r *OPCUAPubSub) Dst() string { return r.Context.GetDstIP() }
+func (r *OPCUAPubSub) Src() string {
+	if ip := r.Context.GetSrcIP(); ip != "" {
+		return ip
+	}
+	return r.Context.GetSrcMAC()
+}
+func (r *OPCUAPubSub) Dst() string {
+	if ip := r.Context.GetDstIP(); ip != "" {
+		return ip
+	}
+	return r.Context.GetDstMAC()
+}
 func (r *OPCUAPubSub) SetPacketContext(c *PacketContext) {
 	if c != nil {
 		v := *c
@@ -198,8 +248,18 @@ func (r *OPCUAPubSub) Encode() []string {
 var metricIEC104 = prometheus.NewCounter(prometheus.CounterOpts{Name: "nc_iec104", Help: "Decoded IEC104 records"})
 
 func (r *IEC104) Time() int64 { return r.Timestamp }
-func (r *IEC104) Src() string { return r.Context.GetSrcIP() }
-func (r *IEC104) Dst() string { return r.Context.GetDstIP() }
+func (r *IEC104) Src() string {
+	if ip := r.Context.GetSrcIP(); ip != "" {
+		return ip
+	}
+	return r.Context.GetSrcMAC()
+}
+func (r *IEC104) Dst() string {
+	if ip := r.Context.GetDstIP(); ip != "" {
+		return ip
+	}
+	return r.Context.GetDstMAC()
+}
 func (r *IEC104) SetPacketContext(c *PacketContext) {
 	if c != nil {
 		v := *c
@@ -235,8 +295,18 @@ func (r *IEC104) Encode() []string {
 var metricMMS = prometheus.NewCounter(prometheus.CounterOpts{Name: "nc_mms", Help: "Decoded MMS records"})
 
 func (r *MMS) Time() int64 { return r.Timestamp }
-func (r *MMS) Src() string { return r.Context.GetSrcIP() }
-func (r *MMS) Dst() string { return r.Context.GetDstIP() }
+func (r *MMS) Src() string {
+	if ip := r.Context.GetSrcIP(); ip != "" {
+		return ip
+	}
+	return r.Context.GetSrcMAC()
+}
+func (r *MMS) Dst() string {
+	if ip := r.Context.GetDstIP(); ip != "" {
+		return ip
+	}
+	return r.Context.GetDstMAC()
+}
 func (r *MMS) SetPacketContext(c *PacketContext) {
 	if c != nil {
 		v := *c
@@ -272,8 +342,18 @@ func (r *MMS) Encode() []string {
 var metricAMS = prometheus.NewCounter(prometheus.CounterOpts{Name: "nc_ams", Help: "Decoded AMS records"})
 
 func (r *AMS) Time() int64 { return r.Timestamp }
-func (r *AMS) Src() string { return r.Context.GetSrcIP() }
-func (r *AMS) Dst() string { return r.Context.GetDstIP() }
+func (r *AMS) Src() string {
+	if ip := r.Context.GetSrcIP(); ip != "" {
+		return ip
+	}
+	return r.Context.GetSrcMAC()
+}
+func (r *AMS) Dst() string {
+	if ip := r.Context.GetDstIP(); ip != "" {
+		return ip
+	}
+	return r.Context.GetDstMAC()
+}
 func (r *AMS) SetPacketContext(c *PacketContext) {
 	if c != nil {
 		v := *c

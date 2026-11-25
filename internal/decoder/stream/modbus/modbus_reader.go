@@ -295,19 +295,24 @@ func (m *modbusReader) frameConversation(emit func(*types.Modbus)) {
 		fragment, ok := input.(*core.StreamData)
 		if !ok {
 			// Neither the missing byte count nor a frame start is known here.
+			clear(identities)
 			f.n = 0
 			lose(i, -1, "unusable fragment")
 			correlation.lose(f.last)
 			stop(i)
 			return
 		}
-		if fragment.SkippedBytes == -1 && !f.started && decoderconfig.Instance.AllowMissingInit {
+		if fragment.SkippedBytes == -1 && fragment.DiscardedBytes == 0 && !f.started && decoderconfig.Instance.AllowMissingInit {
 			// A midstream start is as arbitrary as a post-gap resume point.
 			f.resuming = true
-		} else if fragment.SkippedBytes != 0 {
+		} else if fragment.SkippedBytes != 0 || fragment.DiscardedBytes > 0 {
 			clear(identities)
 			f.n = 0
-			lose(i, int64(fragment.SkippedBytes), "capture gap")
+			lost := int64(fragment.SkippedBytes)
+			if lost >= 0 {
+				lost += int64(fragment.DiscardedBytes)
+			}
+			lose(i, lost, "capture gap")
 			correlation.lose(f.last)
 			if fragment.SkippedBytes < 0 {
 				// An unknown amount of loss leaves no known frame start.

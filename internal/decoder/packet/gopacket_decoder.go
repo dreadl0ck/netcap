@@ -254,6 +254,16 @@ func (dec *GoPacketDecoder) Decode(ctx *types.PacketContext, p gopacket.Packet, 
 		}
 
 		if ctx != nil {
+			switch dec.Type {
+			case types.Type_NC_PTPv2, types.Type_NC_GOOSE, types.Type_NC_SampledValues, types.Type_NC_OPCUAPubSub:
+				// These records can travel directly over Ethernet, with no IP endpoints.
+				v := *ctx
+				if link := p.LinkLayer(); link != nil {
+					flow := link.LinkFlow()
+					v.SrcMAC, v.DstMAC = flow.Src().String(), flow.Dst().String()
+				}
+				ctx = &v
+			}
 			// assert to audit record
 			if auditRecord, ok := record.(types.AuditRecord); ok {
 				auditRecord.SetPacketContext(ctx)
