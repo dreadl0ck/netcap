@@ -41,8 +41,8 @@ type industrialCapture struct {
 	payload, metrics bool
 }
 type udpDNP struct {
-	d    dnp3.Datagrams
-	last int64
+	d     dnp3.Datagrams
+	scope string
 }
 
 const industrialMaxTransfers = 64
@@ -148,7 +148,7 @@ func (o *industrialCapture) observe(p, original gopacket.Packet) []industrialEve
 		if carrier == "MS/TP" {
 			p = gopacket.NewPacket(p.Data(), layers.LayerTypeBACnetMSTP, gopacket.NoCopy)
 		}
-		if b := o.bacnet.Decode(p, route, carrier, ctx, at, o.payload); b != nil {
+		if b := o.bacnet.Decode(p, route, carrier, ctx, at, o.payload, func(b *types.BACnetIP) { out = append(out, industrialEvent{b, b.NetworkScope}) }); b != nil {
 			r = b
 		}
 	case types.Type_NC_PROFINET:
@@ -161,13 +161,15 @@ func (o *industrialCapture) observe(p, original gopacket.Packet) []industrialEve
 		s := o.dnp[route]
 		if s == nil {
 			if len(o.dnp) >= industrialMaxTransfers {
-				return append(out, industrialEvent{&types.DNP3{Timestamp: at, CommunityID: ctx.CommunityID, ParseStatus: "lost", ParseError: "UDP assembly limit"}, ctx.NetworkScope})
+				return append(out, industrialEvent{&types.DNP3{Timestamp: at, SrcIP: ctx.SrcIP, DstIP: ctx.DstIP, SrcPort: ctx.SrcPort, DstPort: ctx.DstPort, CommunityID: ctx.CommunityID, ParseStatus: "lost", ParseError: "UDP assembly limit"}, ctx.NetworkScope})
 			}
-			s = &udpDNP{}
+			s = &udpDNP{scope: ctx.NetworkScope}
 			o.dnp[route] = s
 		}
-		s.last = at
 		s.d.Decode(p.Layer(layers.LayerTypeUDP).(*layers.UDP).Payload, ctx, at, func(d *types.DNP3) { out = append(out, industrialEvent{d, ctx.NetworkScope}) })
+		if !s.d.Pending() {
+			delete(o.dnp, route)
+		}
 	}
 	if r != nil {
 		out = append(out, industrialEvent{r, ctx.NetworkScope})
@@ -190,16 +192,13 @@ func (o *industrialCapture) expire(before int64, all bool) (out []industrialEven
 	for k, v := range o.ec {
 		if all || v.last < before {
 			delete(o.ec, k)
-			m := &types.MailboxTransfer{Station: uint32(v.station), Protocol: v.protocol, FirstTimestamp: v.first, Status: "incomplete: " + why}
-			if t := v.join.FlushFoE(v.station); t != nil {
-				m.Kind = t.Kind.String()
-				m.Length = uint32(len(t.Data))
-			}
+			m := v.incomplete(why)
 			out = append(out, industrialEvent{&types.EtherCAT{Timestamp: v.first, Context: v.ctx, FrameType: "Mailbox", Mailboxes: []*types.MailboxTransfer{m}}, v.ctx.NetworkScope})
 		}
 	}
 	for k, v := range o.dnp {
-		if all || v.last < before {
+		v.d.Flush(before, all, why, func(r *types.DNP3) { out = append(out, industrialEvent{r, v.scope}) })
+		if !v.d.Pending() {
 			delete(o.dnp, k)
 		}
 	}

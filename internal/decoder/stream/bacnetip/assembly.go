@@ -2,14 +2,16 @@ package bacnetip
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"github.com/dreadl0ck/netcap/internal/bacnet"
 	"time"
 
-	"github.com/dreadl0ck/netcap/types"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
+
+	"github.com/dreadl0ck/netcap/internal/bacnet"
+	"github.com/dreadl0ck/netcap/types"
 )
 
 // Assembly belongs to a capture (or one decrypted WebSocket), never a process.
@@ -28,6 +30,29 @@ type segment struct {
 	first, last int64
 	pieces      uint32
 	initial     *types.BACnetIP
+	next        uint8
+	held        [256]bool
+	zero        [sha256.Size]byte
+}
+
+// Track distinct pieces in the same modulo-256 receive window as the assembler.
+func (v *segment) observe(seq uint8) bool {
+	if seq-v.next > 127 || v.held[seq] {
+		return false
+	}
+	v.pieces++
+	v.held[seq] = true
+	for v.held[v.next] {
+		v.held[v.next] = false
+		v.next++
+	}
+	return true
+}
+
+func (v *segment) incomplete(reason string) *types.BACnetIP {
+	r := *v.initial
+	r.Assembly = &types.OTAssembly{Status: "incomplete", Reason: reason, FirstTimestamp: v.first, Pieces: v.pieces}
+	return &r
 }
 
 func (s *Assembly) Flush(before int64, all bool, emit func(*types.BACnetIP)) {
@@ -36,18 +61,16 @@ func (s *Assembly) Flush(before int64, all bool, emit func(*types.BACnetIP)) {
 			continue
 		}
 		delete(s.pending, k)
-		r := *v.initial
 		reason := "idle expiry"
 		if all {
 			reason = "EOF"
 		}
-		r.Assembly = &types.OTAssembly{Status: "incomplete", Reason: reason, FirstTimestamp: v.first, Pieces: v.pieces}
-		emit(&r)
+		emit(v.incomplete(reason))
 	}
 }
 
 // Decode takes a decoded BVLC, MS/TP or SC envelope; route distinguishes both outer peers.
-func (s *Assembly) Decode(p gopacket.Packet, route, carrier string, ctx *types.PacketContext, at int64, payload bool) *types.BACnetIP {
+func (s *Assembly) Decode(p gopacket.Packet, route, carrier string, ctx *types.PacketContext, at int64, payload bool, emit func(*types.BACnetIP)) *types.BACnetIP {
 	r := &types.BACnetIP{Timestamp: at, Carrier: carrier, CommunityID: ctx.CommunityID, SrcIP: ctx.SrcIP, DstIP: ctx.DstIP, SrcPort: ctx.SrcPort, DstPort: ctx.DstPort, LinkSource: ctx.SrcMAC, LinkDestination: ctx.DstMAC, Assembly: &types.OTAssembly{Status: "complete", FirstTimestamp: at, Pieces: 1}}
 	var src, dst string
 	r.NetworkScope = ctx.NetworkScope
@@ -110,6 +133,11 @@ func (s *Assembly) Decode(p gopacket.Packet, route, carrier string, ctx *types.P
 		r.SegmentedMessage = 1
 		k := segmentKey{route, src, dst, a.InvokeID, a.PDUType, a.ConfirmedService}
 		v := s.pending[k]
+		if v != nil && a.SequenceNumber == 0 && -v.next > 127 && sha256.Sum256(a.Parameters) != v.zero {
+			emit(v.incomplete("invoke ID reused"))
+			delete(s.pending, k)
+			v = nil
+		}
 		if v == nil {
 			if a.SequenceNumber != 0 {
 				r.Assembly.Status, r.Assembly.Reason = "incomplete", "missing initial segment"
@@ -128,8 +156,15 @@ func (s *Assembly) Decode(p gopacket.Packet, route, carrier string, ctx *types.P
 			s.pending[k] = v
 		}
 		v.last = at
-		v.pieces++
+		accepted := v.observe(a.SequenceNumber)
+		if accepted && a.SequenceNumber == 0 {
+			v.zero = sha256.Sum256(a.Parameters)
+		}
 		r.Assembly.FirstTimestamp, r.Assembly.Pieces = v.first, v.pieces
+		if !accepted {
+			r.Assembly.Status = "duplicate"
+			return r
+		}
 		whole, err := v.join.Add(nil, a)
 		if err != nil {
 			delete(s.pending, k)

@@ -28,19 +28,22 @@ func (d *dnp3Reader) frameDatagrams(emit func(*types.DNP3)) {
 		a := &dirs[side]
 		for data := f.Raw(); len(data) > 0; {
 			if len(data) < linkHeaderLen || data[0] != startByte1 || data[1] != startByte2 || !crcValid(data[:8], data[8:10]) {
-				*a = nil
+				a.flush(0, true, "invalid datagram link header", add)
 				add(d.lostRecord(server, at, int64(len(data)), "invalid datagram link header"))
 				break
 			}
 			n := frameLen(data[2])
 			if n < 0 || n > len(data) {
-				*a = nil
+				a.flush(0, true, "truncated datagram frame", add)
 				add(d.lostRecord(server, at, int64(len(data)), "truncated datagram frame"))
 				break
 			}
-			add(d.assembledFrame(a, data[:n], at, server, false))
+			add(d.assembledFrame(a, data[:n], at, server, false, add))
 			data = data[n:]
 		}
+	}
+	for _, a := range dirs {
+		a.flush(0, true, "EOF", add)
 	}
 	correlate(masters, outstations)
 	for _, r := range ordered {

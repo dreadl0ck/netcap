@@ -1,20 +1,38 @@
 package s7comm
 
 import (
+	"slices"
+	"sync/atomic"
+
+	"github.com/gopacket/gopacket"
+	"github.com/gopacket/gopacket/layers"
+
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/otframe"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/gopacket/gopacket"
-	"github.com/gopacket/gopacket/layers"
-	"sync/atomic"
 )
 
+type unitStart struct {
+	at              int64
+	ref, group, sub byte
+	dropped         bool
+}
+
+func (s unitStart) continuedBy(v *layers.S7CommUserdata) bool {
+	if s.group != byte(v.FunctionGroup) || s.sub != byte(v.Subfunction) || len(v.Data) < 2 {
+		return false
+	}
+	return v.FunctionGroup == layers.S7CommGroupNCProgramming || v.Fragmented() && s.ref == v.DataUnitRef
+}
+
 type Assembly struct {
-	ud          layers.S7CommUDAssembler
-	plus        layers.S7CommPlusAssembler
-	first       map[[3]byte]int64
+	ud   layers.S7CommUDAssembler
+	plus layers.S7CommPlusAssembler
+	// Match the upstream assembler's slots, including replacement on ref or service change.
+	first       map[[2]byte]unitStart
 	plusStart   int64
 	plusPending bool
+	plusDropped bool
 	uncertain   bool
 }
 
@@ -39,7 +57,14 @@ func (s *Assembly) Reset(c *core.ConversationInfo, f otframe.Frame, reason strin
 	if s.plusPending {
 		mark(s.plusStart)
 	}
-	for _, at := range s.first {
+	starts := make([]int64, 0, len(s.first))
+	for _, start := range s.first {
+		if !start.dropped {
+			starts = append(starts, start.at)
+		}
+	}
+	slices.Sort(starts)
+	for _, at := range starts {
 		mark(at)
 	}
 	*s = Assembly{uncertain: reason != "EOF"}
@@ -58,21 +83,40 @@ func (s *Assembly) Observe(conv *core.ConversationInfo, u otframe.TSDU, setup bo
 		reader.parseS7Comm(r, u.Data)
 		if p.Userdata != nil {
 			v := p.Userdata
-			k := [3]byte{byte(v.Type), v.Sequence, v.DataUnitRef}
+			k := [2]byte{byte(v.Type), v.Sequence}
 			if s.first == nil {
-				s.first = make(map[[3]byte]int64)
+				s.first = make(map[[2]byte]unitStart)
 			}
 			first, ok := s.first[k]
+			start := unitStart{at: u.At, ref: v.DataUnitRef, group: byte(v.FunctionGroup), sub: byte(v.Subfunction)}
+			// NC programming increments the data unit reference, including across zero.
+			if ok && !first.continuedBy(v) {
+				if !first.dropped {
+					writeS7(conv, u.Frame, &types.S7Comm{Assembly: &types.OTAssembly{Status: "incomplete", Reason: "userdata transfer replaced", FirstTimestamp: first.at}})
+				}
+				ok = false
+			}
 			if !ok {
-				first = u.At
+				first = start
 			}
 			joined, err := s.ud.Feed(&p)
-			r.Assembly.FirstTimestamp = first
+			r.Assembly.FirstTimestamp = first.at
 			switch {
 			case err != nil:
 				r.Assembly.Status, r.Assembly.Reason = "incomplete", err.Error()
-				delete(s.first, k)
+				if v.LastDataUnit != 0 {
+					first.dropped = true
+					s.first[k] = first
+				} else {
+					delete(s.first, k)
+				}
 			case joined == nil:
+				if first.dropped {
+					if v.LastDataUnit == 0 {
+						delete(s.first, k)
+					}
+					return
+				}
 				r.Assembly.Status = "pending"
 				s.first[k] = first
 			default:
@@ -101,14 +145,25 @@ func (s *Assembly) Observe(conv *core.ConversationInfo, u otframe.TSDU, setup bo
 			break
 		}
 		r.MessageType = int32(p.Version)
+		if p.Version == layers.S7CommPlusKeepAlive {
+			// An independent event does not finish or retimestamp an open PDU.
+			r.MessageTypeName = "S7Comm Plus system event"
+			writeS7(conv, u.Frame, r)
+			return
+		}
 		if !s.plusPending {
 			s.plusStart = u.At
 		}
 		joined, err := s.plus.Feed(&p)
 		r.Assembly.FirstTimestamp = s.plusStart
+		if s.plusDropped {
+			s.plusDropped = !p.HasTrailer
+			return
+		}
 		s.plusPending = joined == nil && err == nil
 		switch {
 		case err != nil:
+			s.plusDropped = !p.HasTrailer
 			r.Assembly.Status, r.Assembly.Reason = "incomplete", err.Error()
 		case joined == nil:
 			r.Assembly.Status = "pending"
@@ -126,11 +181,18 @@ func (s *Assembly) Observe(conv *core.ConversationInfo, u otframe.TSDU, setup bo
 		return
 	}
 	if u.Type == gopacket.LayerTypeZero {
-		if !setup || u.Carrier.Type == layers.COTPTypeDT {
+		if u.Carrier.Type == layers.COTPTypeDT {
 			return
 		}
-		s.Reset(conv, u.Frame, "COTP connection boundary")
-		s.uncertain = false
+		switch u.Carrier.Type {
+		case layers.COTPTypeCR, layers.COTPTypeCC, layers.COTPTypeDR, layers.COTPTypeDC:
+			s.Reset(conv, u.Frame, "COTP connection boundary")
+			s.uncertain = false
+		}
+		if !setup {
+			return
+		}
+		r.COTPDestRef, r.COTPSrcRef, r.COTPClass = int32(u.Carrier.DstRef), int32(u.Carrier.SrcRef), int32(u.Carrier.Class)
 	}
 	writeS7(conv, u.Frame, r)
 }

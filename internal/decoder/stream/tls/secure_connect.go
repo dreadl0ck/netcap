@@ -123,7 +123,7 @@ func decodeSecureConnect(c *core.ConversationInfo, records []tlsdecrypt.Plaintex
 		cur.messages(func(body []byte, at int64) {
 			join.Advance(at, emit)
 			p := gopacket.NewPacket(body, layers.LayerTypeBACnetSC, gopacket.NoCopy)
-			if r := join.Decode(p, "session", "BACnet/SC", ctx, at, config.Instance.IncludePayloads); r != nil {
+			if r := join.Decode(p, "session", "BACnet/SC", ctx, at, config.Instance.IncludePayloads, emit); r != nil {
 				emit(r)
 			}
 		}, func(why string, at int64) {

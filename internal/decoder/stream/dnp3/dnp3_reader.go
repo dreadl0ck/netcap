@@ -239,6 +239,7 @@ func (d *dnp3Reader) frameDirection(fragments core.DataFragments, server, orient
 	state := &directionState{server: server, buf: make([]byte, 0, maxFrameLen)}
 
 	emitLoss := func(bytes, timestamp int64, reason string) {
+		state.links.flush(0, true, reason, emit)
 		emit(d.lostRecord(server, timestamp, bytes, reason))
 	}
 
@@ -249,7 +250,6 @@ func (d *dnp3Reader) frameDirection(fragments core.DataFragments, server, orient
 		}
 
 		if data.SkippedBytes != 0 || data.DiscardedBytes != 0 {
-			state.links = nil
 			// Framing cannot survive a gap: the bytes buffered before it belong
 			// to a frame whose remainder was destroyed.
 			if len(state.buf) > 0 {
@@ -275,6 +275,7 @@ func (d *dnp3Reader) frameDirection(fragments core.DataFragments, server, orient
 	}
 
 	state.loss.flush(emitLoss)
+	state.links.flush(0, true, "EOF", emit)
 }
 
 // consume extracts every complete frame currently buffered.
@@ -349,7 +350,7 @@ func (d *dnp3Reader) consume(state *directionState, oriented bool, emit func(*ty
 
 		// A marker stays ordered ahead of the record that ended the loss.
 		state.loss.flush(emitLoss)
-		if r := d.assembledFrame(&state.links, frame, ts, state.server, oriented); r != nil {
+		if r := d.assembledFrame(&state.links, frame, ts, state.server, oriented, emit); r != nil {
 			emit(r)
 		}
 		state.discard(start + size)

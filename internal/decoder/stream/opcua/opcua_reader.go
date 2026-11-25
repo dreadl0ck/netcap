@@ -2,6 +2,7 @@ package opcua
 
 import (
 	"bytes"
+	"errors"
 	"sort"
 	"sync/atomic"
 
@@ -138,7 +139,20 @@ func (o *opcuaReader) walk(emit func(*types.OPCUA)) {
 		}
 		v, err := s.join.Add(&p)
 		r.Assembly.FirstTimestamp, r.Assembly.Pieces = series.at, series.count
+		closeSeries := func() {
+			if retained, ok := s.series[key]; ok {
+				delete(s.series, key)
+				c.StateBudget.Release(retained.credit)
+			}
+		}
 		if err != nil {
+			if errors.Is(err, layers.ErrOPCUAChunkLost) {
+				closeSeries()
+				r.Timestamp, r.RequestId, r.SequenceNumber = series.at, p.RequestID, p.SequenceNumber
+				r.Assembly.Status, r.Assembly.Reason = "incomplete", err.Error()
+				emit(r)
+				return
+			}
 			reset(f, err.Error())
 			return
 		}
@@ -151,16 +165,14 @@ func (o *opcuaReader) walk(emit func(*types.OPCUA)) {
 		if v.Encrypted {
 			r.Assembly.Status = "opaque"
 		} else if v.ChunkType == layers.OPCUAChunkAbort {
+			r.Timestamp, r.RequestId, r.SequenceNumber = series.at, v.RequestID, v.SequenceNumber
 			r.Assembly.Status = "aborted"
 			r.ErrorCode, r.ErrorReason = uint32(v.Error.Error), v.Error.Reason
 		} else {
 			mapMessage(r, v)
 			r.Timestamp = series.at
 		}
-		if retained, ok := s.series[key]; ok {
-			delete(s.series, key)
-			c.StateBudget.Release(retained.credit)
-		}
+		closeSeries()
 		emit(r)
 	}, reset)
 }

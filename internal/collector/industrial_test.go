@@ -41,6 +41,10 @@ func TestIndustrialReplay(t *testing.T) {
 			return r.UFunction != "" && r.Assembly.GetStatus() == "complete"
 		}},
 		{"iec61850_mms.pcap", "MMS", func() proto.Message { return new(types.MMS) }, 163, func(m proto.Message) bool { r := m.(*types.MMS); return r.InvokeID == 4431 && r.Service != "" }},
+		{"s7commplus-1200-upload.pcap", "S7Comm", func() proto.Message { return new(types.S7Comm) }, 90, func(m proto.Message) bool {
+			r := m.(*types.S7Comm)
+			return r.Assembly.GetStatus() == "complete" && r.Assembly.Pieces == 3 && r.Timestamp == 1387554088163307000 && r.S7PlusFunction == 0x04ca && r.DataLength == 2219
+		}},
 		{"opcua-read.pcap", "OPCUA", func() proto.Message { return new(types.OPCUA) }, 18, func(m proto.Message) bool {
 			r := m.(*types.OPCUA)
 			return r.ServiceName == "ReadRequest" && r.IsRequest && r.Assembly.GetStatus() == "complete"
@@ -48,6 +52,14 @@ func TestIndustrialReplay(t *testing.T) {
 		{"opcua-encrypted.pcap", "OPCUA", func() proto.Message { return new(types.OPCUA) }, 14, func(m proto.Message) bool {
 			r := m.(*types.OPCUA)
 			return r.MessageType == "MSG" && r.Assembly.GetStatus() == "opaque" && r.ServiceName == "" && r.RequestId == 0 && len(r.Payload) == 0
+		}},
+		{"opcua-signed.pcap", "OPCUA", func() proto.Message { return new(types.OPCUA) }, 10, func(m proto.Message) bool {
+			r := m.(*types.OPCUA)
+			return r.Assembly.GetStatus() == "complete" && r.IsRequest && r.ServiceName == "BrowseRequest"
+		}},
+		{"profinet-extra.pcap", "PROFINET", func() proto.Message { return new(types.PROFINET) }, 64, func(m proto.Message) bool {
+			r := m.(*types.PROFINET)
+			return r.Assembly.GetStatus() == "complete" && r.Assembly.Pieces == 3 && r.Timestamp == 1795085931000024000 && r.IsRequest && r.SequenceNumber == 0x1234 && r.ServiceID == 5
 		}},
 		{"profinet-dcp.pcap", "PROFINET", func() proto.Message { return new(types.PROFINET) }, 24, func(m proto.Message) bool {
 			r := m.(*types.PROFINET)
@@ -64,12 +76,39 @@ func TestIndustrialReplay(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			path := filepath.Join(strings.TrimSpace(string(root)), "layers/testdata", tc.file)
+			if tc.file == "opcua-signed.pcap" {
+				// Loopback capture begins at HEL, after the TCP handshake.
+				t.Setenv("NETCAP_TEST_MIDSTREAM", "1")
+			}
 			var baseline [][]byte
-			for _, workers := range []int{1, 3} {
+			workerCounts := []int{1, 3}
+			switch tc.name {
+			case "PTPv2", "GOOSE", "SampledValues", "EtherCAT", "PROFINET", "BACnetIP":
+				workerCounts = append(workerCounts, 3)
+			}
+			for i, workers := range workerCounts {
+				if i == 2 {
+					t.Setenv("W76_PACKET_ONLY", "1")
+				}
 				out := runVoIP(t, path, tc.name, workers)
 				records := bookRecords(t, out, tc.name, tc.new)
 				if len(records) != tc.want || !slices.ContainsFunc(records, tc.match) {
 					t.Fatalf("%s: workers=%d, got %d records (want %d) or expected field missing", tc.file, workers, len(records), tc.want)
+				}
+				if tc.name == "S7Comm" {
+					joined, confirmed := 0, 0
+					for _, row := range records {
+						r := row.(*types.S7Comm)
+						if tc.match(row) {
+							joined++
+						}
+						if r.COTPPDUType == 0xd0 && r.COTPSrcRef == 7 && r.COTPDestRef == 0x11 {
+							confirmed++
+						}
+					}
+					if joined != 1 || confirmed != 1 {
+						t.Fatalf("joined CreateObject=%d, matching COTP CC=%d", joined, confirmed)
+					}
 				}
 				var rows [][]byte
 				for _, r := range records {

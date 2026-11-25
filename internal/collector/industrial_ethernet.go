@@ -25,6 +25,32 @@ type ecTransfer struct {
 	protocol    string
 }
 
+func (s *ecTransfer) incomplete(why string) *types.MailboxTransfer {
+	m := &types.MailboxTransfer{Station: uint32(s.station), Protocol: s.protocol, FirstTimestamp: s.first, Status: "incomplete: " + why}
+	if t := s.join.FlushFoE(s.station); t != nil {
+		m.Kind, m.Length = t.Kind.String(), uint32(len(t.Data))
+	}
+	return m
+}
+
+// SDO and FoE span a request and its replies; EoE and SoE carry independent
+// transfers in each direction, and SoE drives can interleave on a channel.
+func ecSlot(d *layers.EtherCATDatagram) (suffix string, starts bool) {
+	m := d.Mailbox
+	fromSlave := d.Command == layers.EtherCATCommandAPRD || d.Command == layers.EtherCATCommandFPRD || d.Command == layers.EtherCATCommandBRD
+	switch {
+	case m.EoE != nil && m.EoE.Type == layers.EtherCATEoEFragment:
+		return fmt.Sprintf("/eoe/%t/%d", fromSlave, m.EoE.Port), m.EoE.FragmentNo == 0
+	case m.SoE != nil:
+		return fmt.Sprintf("/soe/%t/%d", fromSlave, m.SoE.DriveNo), false
+	case m.FoE != nil:
+		return "", m.FoE.OpCode == layers.EtherCATFoERRQ || m.FoE.OpCode == layers.EtherCATFoEWRQ
+	case m.CoE != nil && m.CoE.SDO != nil && !m.CoE.SDO.Segment:
+		return "", m.CoE.Service == layers.EtherCATCoESDORequest && m.CoE.SDO.Specifier == layers.EtherCATSDOCCSInitiateDownload || m.CoE.Service == layers.EtherCATCoESDOResponse && m.CoE.SDO.Specifier == layers.EtherCATSDOSCSInitiateUpload
+	}
+	return "", false
+}
+
 func (o *industrialCapture) profinet(p gopacket.Packet, ctx *types.PacketContext, route string, at int64) *types.PROFINET {
 	r := &types.PROFINET{Timestamp: at, SrcIP: ctx.SrcIP, DstIP: ctx.DstIP, SrcPort: ctx.SrcPort, DstPort: ctx.DstPort, CommunityID: ctx.CommunityID, Context: ctx, Assembly: &types.OTAssembly{Status: "complete", FirstTimestamp: at, Pieces: 1}}
 	if rpc, ok := p.Layer(layers.LayerTypeProfinetIORPC).(*layers.ProfinetIORPC); ok {
@@ -169,15 +195,17 @@ func (o *industrialCapture) ethercat(v *layers.EtherCAT, ctx *types.PacketContex
 			a, b = b, a
 		}
 		m := &types.MailboxTransfer{Station: uint32(d.ADP()), Protocol: d.Mailbox.Type.String()}
-		r.Mailboxes = append(r.Mailboxes, m)
-		k := fmt.Sprintf("%s/%s/%s/%d/%d/%d", ctx.NetworkScope, a, b, d.ADP(), d.Mailbox.Channel, d.Mailbox.Type)
+		suffix, starts := ecSlot(d)
+		k := fmt.Sprintf("%s/%s/%s/%d/%d/%d%s", ctx.NetworkScope, a, b, d.ADP(), d.Mailbox.Channel, d.Mailbox.Type, suffix)
 		s := o.ec[k]
+		if s != nil && starts {
+			r.Mailboxes = append(r.Mailboxes, s.incomplete("replaced"))
+			delete(o.ec, k)
+			s = nil
+		}
+		r.Mailboxes = append(r.Mailboxes, m)
 		if s == nil {
-			if len(o.ec) >= industrialMaxTransfers {
-				m.Status = "limited"
-				continue
-			}
-			s = &ecTransfer{ctx: ctx, first: at, station: d.ADP(), protocol: m.Protocol, join: layers.EtherCATMailboxAssembler{MaxOpen: 4, MaxBytes: 256 << 10}}
+			s = &ecTransfer{ctx: ctx, first: at, station: d.ADP(), protocol: m.Protocol, join: layers.EtherCATMailboxAssembler{MaxOpen: 1, MaxBytes: 256 << 10}}
 		}
 		s.last = at
 		m.FirstTimestamp = s.first
@@ -192,6 +220,10 @@ func (o *industrialCapture) ethercat(v *layers.EtherCAT, ctx *types.PacketContex
 			}
 		}
 		if s.join.Open() > 0 {
+			if o.ec[k] == nil && len(o.ec) >= industrialMaxTransfers {
+				m.Status = "limited"
+				continue
+			}
 			o.ec[k] = s
 		} else {
 			delete(o.ec, k)
