@@ -803,7 +803,7 @@ func (t *tcpConnection) decode() {
 		}
 	}
 	stream.ObserveFTPData(conv)
-	stream.ObserveIndustrial(conv)
+	stream.ObserveIndustrial(conv, sel.Name)
 	secret.HarvestSMTPConversation(conv)
 	secret.HarvestTelnetConversation(conv)
 	secret.HarvestAdditionalConversation(conv)

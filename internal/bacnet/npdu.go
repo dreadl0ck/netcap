@@ -89,7 +89,7 @@ func ParseNPDU(data []byte) (*PDU, error) {
 		return p, nil
 	}
 	p.ApplicationOffset = offset
-	a, err := parseApplication(data[offset:])
+	a, err := ParseApplication(data[offset:])
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func ParseNPDU(data []byte) (*PDU, error) {
 	return p, nil
 }
 
-func parseApplication(data []byte) (*Application, error) {
+func ParseApplication(data []byte) (*Application, error) {
 	if len(data) == 0 || data[0]>>4 > 7 {
 		return nil, fmt.Errorf("invalid BACnet APDU type")
 	}

@@ -40,6 +40,8 @@ func TestModbusCSVAndEncode(t *testing.T) {
 		AndMask:         65535, OrMask: 32768, CorrelationStatus: "matched", RequestTimestamp: 1700000000123000000, ResponseLatency: 456789,
 		DeviceIDObjectID: 5, DeviceIDConformityLevel: 131, DeviceIDMoreFollows: true, DeviceIDNextObjectID: 6,
 		HasMBAP: true, HasChecksum: true, ChecksumValid: true, Broadcast: true, LostBytes: 400,
+		FunctionName: "Read Holding Registers", ExceptionName: "Illegal Data Address", EventCount: 8, MessageCount: 11, StatusWord: 65535,
+		DeviceIdentity: []*ModbusDeviceIDObject{{ID: 2, Value: []byte("v1")}},
 	}
 	ctx := &PacketContext{
 		SrcIP: "192.0.2.1", DstIP: "198.51.100.2", SrcPort: 12345, DstPort: 502,
@@ -59,6 +61,7 @@ func TestModbusCSVAndEncode(t *testing.T) {
 		"DeviceIDObjects", "FileRecords", "AndMask", "OrMask", "CorrelationStatus", "RequestTimestamp", "ResponseLatency",
 		"DeviceIDObjectID", "DeviceIDConformityLevel", "DeviceIDMoreFollows", "DeviceIDNextObjectID",
 		"HasMBAP", "HasChecksum", "ChecksumValid", "Broadcast", "LostBytes",
+		"FunctionName", "ExceptionName", "EventCount", "MessageCount", "StatusWord", "DeviceIdentity",
 	}
 	wantCSV := []string{
 		formatTimestamp(a.Timestamp), "17", "2", "6", "4", "00abff", "true", "3",
@@ -69,6 +72,7 @@ func TestModbusCSVAndEncode(t *testing.T) {
 		`[{"ReferenceType":6,"FileNumber":7,"RecordNumber":8,"RecordLength":2,"Values":[0,65535]}]`,
 		"65535", "32768", "matched", formatTimestamp(a.RequestTimestamp), "456789", "5", "131", "true", "6",
 		"true", "true", "true", "true", "400",
+		"Read Holding Registers", "Illegal Data Address", "8", "11", "65535", `[{"ID":2,"Value":"djE="}]`,
 	}
 	if got := a.CSVHeader(); !reflect.DeepEqual(got, wantHeader) {
 		t.Fatalf("header = %v, want %v", got, wantHeader)
@@ -124,7 +128,7 @@ func TestModbusCSVAndEncode(t *testing.T) {
 		}
 		var number float64
 		switch field {
-		case "SrcIP", "DstIP":
+		case "SrcIP", "DstIP", "FunctionName", "ExceptionName":
 			wantEncoded[i] = reference.String(field, wantCSV[i])
 			continue
 		case "Exception", "HasAddress", "HasReadAddress", "HasWriteAddress", "HasDiagnostic", "DeviceIDMoreFollows", "HasMBAP", "HasChecksum", "ChecksumValid", "Broadcast":
@@ -138,7 +142,7 @@ func TestModbusCSVAndEncode(t *testing.T) {
 			number = float64(crc32.ChecksumIEEE(a.Payload) & 0xffff)
 		case "DiagnosticData":
 			number = float64(crc32.ChecksumIEEE(a.DiagnosticData) & 0xffff)
-		case "CommunityID", "Transport", "MessageRole", "ParseStatus", "ParseError", "Bank", "CorrelationStatus", "Values", "WriteValues", "DeviceIDObjects", "FileRecords":
+		case "CommunityID", "Transport", "MessageRole", "ParseStatus", "ParseError", "Bank", "CorrelationStatus", "Values", "WriteValues", "DeviceIDObjects", "FileRecords", "DeviceIdentity":
 			number = float64(crc32.ChecksumIEEE([]byte(wantCSV[i])) & 0xffff)
 		default:
 			var err error
@@ -194,8 +198,8 @@ func TestModbusCSVAndEncode(t *testing.T) {
 	if len(header) != len(wantHeader) || len(csv) != len(wantHeader) || len(enc) != len(wantHeader) {
 		t.Fatalf("loss marker columns: %d/%d/%d", len(header), len(csv), len(enc))
 	}
-	if csv[len(csv)-1] != "-1" || header[len(header)-1] != "LostBytes" {
-		t.Fatalf("loss marker LostBytes column: %q/%q", header[len(header)-1], csv[len(csv)-1])
+	if csv[50] != "-1" || header[50] != "LostBytes" {
+		t.Fatalf("loss marker LostBytes column: %q/%q", header[50], csv[50])
 	}
 }
 

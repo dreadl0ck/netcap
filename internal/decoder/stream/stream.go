@@ -184,6 +184,7 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 		return nil, err
 	}
 	tls.Decoder.Writer = nil
+	bacnetip.Decoder.Writer = nil
 	sip.Decoder.Writer = nil
 	rtp.Decoder.Writer = nil
 	in, err := decoderutils.NormalizeDecoderList(c.IncludeDecoders, errInvalidStreamDecoder)

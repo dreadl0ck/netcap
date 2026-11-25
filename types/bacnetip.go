@@ -118,6 +118,7 @@ var fieldsBACnetIP = []string{
 	fieldBACnetIPIsSecurityRelevant,
 	fieldBACnetIPIsCriticalOperation,
 	"ParseQualifications",
+	"Assembly", "Carrier", "SCMessageID", "LinkSource", "LinkDestination", "NetworkScope",
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -174,6 +175,7 @@ func (b *BACnetIP) CSVRecord() []string {
 		strconv.FormatBool(b.IsSecurityRelevant),
 		strconv.FormatBool(b.IsCriticalOperation),
 		strings.Join(b.ParseQualifications, ";"),
+		dnp3JSONCell(b.Assembly), b.Carrier, formatUint32(b.SCMessageID), b.LinkSource, b.LinkDestination, b.NetworkScope,
 	})
 }
 
@@ -185,9 +187,9 @@ func (b *BACnetIP) Time() int64 {
 // JSON returns the JSON representation of the audit record.
 func (b *BACnetIP) JSON() (string, error) {
 	// convert unix timestamp from nano to millisecond precision for elastic
-	b.Timestamp /= int64(time.Millisecond)
-
-	return jsonMarshaler.MarshalToString(b)
+	v := *b
+	v.Timestamp /= int64(time.Millisecond)
+	return jsonMarshaler.MarshalToString(&v)
 }
 
 var bacnetipMetric = prometheus.NewCounterVec(
@@ -195,12 +197,12 @@ var bacnetipMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_BACnetIP.String()),
 		Help: Type_NC_BACnetIP.String() + " audit records",
 	},
-	fieldsBACnetIP[1:],
+	fieldsBACnetIP[1:len(fieldsBACnetIP)-6],
 )
 
 // Inc increments the metrics for the audit record.
 func (b *BACnetIP) Inc() {
-	bacnetipMetric.WithLabelValues(b.CSVRecord()[1:]...).Inc()
+	bacnetipMetric.WithLabelValues(b.CSVRecord()[1 : len(fieldsBACnetIP)-6]...).Inc()
 }
 
 // SetPacketContext sets the associated packet context for the audit record.
@@ -272,6 +274,7 @@ func (b *BACnetIP) Encode() []string {
 		bacnetipEncoder.Bool(b.IsSecurityRelevant),
 		bacnetipEncoder.Bool(b.IsCriticalOperation),
 		bacnetipEncoder.String("ParseQualifications", strings.Join(b.ParseQualifications, ";")),
+		bacnetipEncoder.String("Assembly", b.Assembly.GetStatus()), bacnetipEncoder.String("Carrier", b.Carrier), bacnetipEncoder.Uint32("SCMessageID", b.SCMessageID), bacnetipEncoder.String("LinkSource", b.LinkSource), bacnetipEncoder.String("LinkDestination", b.LinkDestination), bacnetipEncoder.String("NetworkScope", b.NetworkScope),
 	})
 }
 

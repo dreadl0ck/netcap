@@ -250,6 +250,24 @@ message EtherCAT {
   uint32 Length = 4;
   repeated string Commands = 5;
   repeated uint32 WorkingCounters = 6;
+  repeated MailboxTransfer Mailboxes = 7;
+}
+message MailboxTransfer {
+  string Protocol = 1;
+  string Status = 2;
+  uint32 Station = 3;
+  string Kind = 4;
+  uint32 Length = 5;
+  uint32 Index = 6;
+  uint32 SubIndex = 7;
+  int64 FirstTimestamp = 8;
+}
+
+message OTAssembly {
+  string Status = 1; // complete, pending, incomplete, malformed, aborted, opaque, or limited
+  string Reason = 2;
+  int64 FirstTimestamp = 3;
+  uint32 Pieces = 4;
 }
 message OPCUAPubSub {
   int64 Timestamp = 1;
@@ -272,6 +290,7 @@ message IEC104 {
   uint32 CommonAddress = 8;
   uint32 Cause = 9;
   uint32 ObjectCount = 10;
+  OTAssembly Assembly = 11;
 }
 message MMS {
   int64 Timestamp = 1;
@@ -280,6 +299,7 @@ message MMS {
   uint32 InvokeID = 4;
   string Service = 5;
   string ServiceError = 6;
+  OTAssembly Assembly = 7;
 }
 message AMS {
   int64 Timestamp = 1;
@@ -291,6 +311,7 @@ message AMS {
   uint32 ErrorCode = 7;
   string TargetNetID = 8;
   string SourceNetID = 9;
+  OTAssembly Assembly = 10;
 }
 
 message LinkFrame {
@@ -457,6 +478,8 @@ message AgentHello {
 //
 
 message PacketContext {
+  string SrcMAC = 13;
+  string DstMAC = 14;
   string SrcIP = 1;
   string DstIP = 2;
   int32 SrcPort = 3;
@@ -2086,6 +2109,12 @@ message Modbus {
   // Set only on ParseStatus "lost" markers: bytes reassembly reported missing,
   // -1 when the amount is unknown and 0 when framing itself became unusable.
   int64 LostBytes = 51;
+  string FunctionName = 52;
+  string ExceptionName = 53;
+  uint32 EventCount = 54;
+  uint32 MessageCount = 55;
+  uint32 StatusWord = 56;
+  repeated ModbusDeviceIDObject DeviceIdentity = 57; // Complete, matched read-device-ID sequence only.
 }
 
 // Open Shortest Path First (OSPF) is a routing protocol for Internet Protocol (IP) networks.
@@ -3758,6 +3787,15 @@ message DNP3 {
                                   // sbo_object_mismatch, sbo_sequence_mismatch, select_expired
   int64 SelectTimestamp = 58;     // Set on a matched Operate
   int64 OperateLatency = 59;      // Nanoseconds between Select and Operate
+  OTAssembly Assembly = 62;
+  uint32 ApplicationFragments = 63;
+  repeated DNP3Point DecodedPoints = 64;
+}
+message DNP3Point {
+  uint32 Group = 1;
+  uint32 Variation = 2;
+  uint32 Index = 3;
+  string Value = 4;
 }
 
 // DNP3Object represents a DNP3 object header and the objects it describes
@@ -4062,6 +4100,7 @@ message MLDv2MulticastAddressRecord {
 // It provides a platform-independent service-oriented architecture for
 // process control and ICS/SCADA systems.
 message OPCUA {
+  OTAssembly Assembly = 34;
   string CommunityID = 33;
   int64 Timestamp = 1;            // Timestamp of the message
   string SrcIP = 2;               // Source IP address
@@ -4120,6 +4159,10 @@ message OPCUA {
 // on TCP port 102. This protocol is widely used in industrial automation and
 // SCADA systems.
 message S7Comm {
+  OTAssembly Assembly = 53;
+  uint32 SZLID = 54;
+  uint32 SZLIndex = 55;
+  uint32 SZLRecords = 56;
   string CommunityID = 52;
   int64 Timestamp = 1;            // Timestamp of the message
   string SrcIP = 2;               // Source IP address
@@ -4230,6 +4273,12 @@ message S7CommDataItem {
 // BACnet is a communications protocol for building automation and control systems.
 // BACnet/IP runs over UDP port 47808 (0xBAC0).
 message BACnetIP {
+  OTAssembly Assembly = 49;
+  string Carrier = 50;
+  uint32 SCMessageID = 51;
+  string NetworkScope = 54;
+  string LinkSource = 52;
+  string LinkDestination = 53;
   int64 Timestamp = 1;            // Timestamp of the message
   string SrcIP = 2;               // Source IP address
   string DstIP = 3;               // Destination IP address
@@ -4474,6 +4523,8 @@ message IEC62351 {
 // It supports real-time (RT) and isochronous real-time (IRT) communication.
 // PROFINET uses DCE/RPC for device configuration and parameter setting.
 message PROFINET {
+  OTAssembly Assembly = 49;
+  PacketContext Context = 50;
   string CommunityID = 48;
   int64 Timestamp = 1;            // Timestamp of the message
   string SrcIP = 2;               // Source IP address

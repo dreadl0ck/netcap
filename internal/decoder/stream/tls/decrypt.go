@@ -78,6 +78,13 @@ func (h *tlsReader) decryptApplication() {
 		conversation.ClientMAC, conversation.ServerMAC = c.ServerMAC, c.ClientMAC
 		conversation.FirstClientPacket, conversation.FirstServerPacket = c.FirstServerPacket, c.FirstClientPacket
 	}
+	if scEnabled() {
+		decodeSecureConnect(&conversation, plaintext)
+		if conversation.FragmentError != nil {
+			c.FragmentError = conversation.FragmentError
+			return
+		}
+	}
 	sort.SliceStable(plaintext, func(i, j int) bool { return plaintext[i].At < plaintext[j].At })
 	var prefix [2][]byte
 	for _, p := range plaintext {

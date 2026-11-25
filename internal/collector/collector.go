@@ -130,6 +130,7 @@ type Collector struct {
 	dispatchMu             sync.Mutex            // admission, controls, and assembler lifecycle
 	packetPipeline         *packetview.Processor // protected by dispatchMu
 	linkReconstruction     *linkReconstructor
+	industrial             *industrialCapture
 	linkProfiles           *deviceprofile.Config
 	behaviorHealthMu       sync.Mutex
 	behaviorCaptureHealth  behavior.CaptureHealth
@@ -900,8 +901,12 @@ func (c *Collector) queuePacketViews(p gopacket.Packet, views packetview.Result,
 		}
 	}
 	queued := p
-	if views.Packet != p || len(views.Evidence) > 0 {
-		queued = &packetWork{Packet: p, views: views, linkEvidence: views.Packet == nil && len(views.Evidence) == 1 && views.Evidence[0].Layer(linkaudit.LayerLinkFrame) != nil}
+	var industrial []industrialEvent
+	if c.industrial != nil {
+		industrial = c.industrial.observe(views.Packet, p)
+	}
+	if views.Packet != p || len(views.Evidence) > 0 || len(industrial) > 0 {
+		queued = &packetWork{Packet: p, views: views, industrial: industrial, linkEvidence: views.Packet == nil && len(views.Evidence) == 1 && views.Evidence[0].Layer(linkaudit.LayerLinkFrame) != nil}
 	}
 	c.wg.Add(1)
 	select {

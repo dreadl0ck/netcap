@@ -28,15 +28,6 @@ var _ = newGoPacketDecoder(types.Type_NC_SampledValues, layers.LayerTypeSV, "IEC
 	return r
 }))
 
-var _ = newGoPacketDecoder(types.Type_NC_EtherCAT, layers.LayerTypeEtherCAT, "EtherCAT frames and datagram working counters", typedLayerHandler(func(p *layers.EtherCAT, t int64) proto.Message {
-	r := &types.EtherCAT{Timestamp: t, FrameType: p.Type.String(), Length: uint32(p.Length)}
-	for _, d := range p.Datagrams {
-		r.Commands = append(r.Commands, d.Command.String())
-		r.WorkingCounters = append(r.WorkingCounters, uint32(d.WorkingCounter))
-	}
-	return r
-}))
-
 var _ = newGoPacketDecoder(types.Type_NC_OPCUAPubSub, layers.LayerTypeOPCUAPubSub, "OPC UA UADP NetworkMessages", typedLayerHandler(func(p *layers.OPCUAPubSub, t int64) proto.Message {
 	r := &types.OPCUAPubSub{Timestamp: t, MessageType: p.Type.String(), Version: uint32(p.Version), Encrypted: p.Security.Flags&layers.OPCUAPubSubEncrypted != 0, Chunk: p.Chunk != nil}
 	for _, id := range p.DataSetWriterIDs {

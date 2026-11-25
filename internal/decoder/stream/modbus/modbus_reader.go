@@ -239,6 +239,7 @@ func (m *modbusReader) frameConversation(emit func(*types.Modbus)) {
 		return
 	}
 	correlation := tcpCorrelation{pending: make(map[int32]pendingRequest)}
+	var identities deviceIDs
 	// Client and server are only known when the handshake was observed; a
 	// midstream capture may have the assignment flipped. Reassembly additionally
 	// inserts an initial-loss marker when no SYN was observed, so inspect both
@@ -304,6 +305,7 @@ func (m *modbusReader) frameConversation(emit func(*types.Modbus)) {
 			// A midstream start is as arbitrary as a post-gap resume point.
 			f.resuming = true
 		} else if fragment.SkippedBytes != 0 {
+			clear(identities)
 			f.n = 0
 			lose(i, int64(fragment.SkippedBytes), "capture gap")
 			correlation.lose(f.last)
@@ -367,6 +369,7 @@ func (m *modbusReader) frameConversation(emit func(*types.Modbus)) {
 			}
 			m.attribute(msg, i == 1, f.timestamp)
 			correlation.observe(msg, i == 1)
+			identities.observe(msg, f.data[mbapHeaderSize:f.n])
 			flush(i)
 			emit(msg)
 			f.n = 0

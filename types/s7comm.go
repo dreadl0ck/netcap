@@ -123,6 +123,7 @@ var fieldsS7Comm = []string{
 	fieldS7CommS7PlusOpcode,
 	fieldS7CommS7PlusOpcodeName,
 	fieldS7CommS7PlusFunction,
+	"Assembly", "SZLID", "SZLIndex", "SZLRecords",
 	"CommunityID",
 }
 
@@ -133,7 +134,11 @@ func (s *S7Comm) CSVHeader() []string {
 
 // CSVRecord returns the CSV record for the audit record.
 func (s *S7Comm) CSVRecord() []string {
-	return filter([]string{
+	return filter(s.csvValues())
+}
+
+func (s *S7Comm) csvValues() []string {
+	return []string{
 		formatTimestamp(s.Timestamp),
 		s.SrcIP,
 		s.DstIP,
@@ -182,8 +187,9 @@ func (s *S7Comm) CSVRecord() []string {
 		formatInt32(s.S7PlusOpcode),
 		s.S7PlusOpcodeName,
 		formatInt32(s.S7PlusFunction),
+		dnp3JSONCell(s.Assembly), formatUint32(s.SZLID), formatUint32(s.SZLIndex), formatUint32(s.SZLRecords),
 		s.CommunityID,
-	})
+	}
 }
 
 // Time returns the timestamp associated with the audit record.
@@ -194,9 +200,9 @@ func (s *S7Comm) Time() int64 {
 // JSON returns the JSON representation of the audit record.
 func (s *S7Comm) JSON() (string, error) {
 	// convert unix timestamp from nano to millisecond precision for elastic
-	s.Timestamp /= int64(time.Millisecond)
-
-	return jsonMarshaler.MarshalToString(s)
+	v := *s
+	v.Timestamp /= int64(time.Millisecond)
+	return jsonMarshaler.MarshalToString(&v)
 }
 
 var s7commMetric = prometheus.NewCounterVec(
@@ -204,12 +210,12 @@ var s7commMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_S7Comm.String()),
 		Help: Type_NC_S7Comm.String() + " audit records",
 	},
-	fieldsS7Comm[1:],
+	legacyOTLabels(fieldsS7Comm, 4),
 )
 
 // Inc increments the metrics for the audit record.
 func (s *S7Comm) Inc() {
-	s7commMetric.WithLabelValues(s.CSVRecord()[1:]...).Inc()
+	s7commMetric.WithLabelValues(legacyOTLabels(s.csvValues(), 4)...).Inc()
 }
 
 // SetPacketContext sets the associated packet context for the audit record.
@@ -283,6 +289,7 @@ func (s *S7Comm) Encode() []string {
 		s7commEncoder.Int32(fieldS7CommS7PlusOpcode, s.S7PlusOpcode),
 		s7commEncoder.String(fieldS7CommS7PlusOpcodeName, s.S7PlusOpcodeName),
 		s7commEncoder.Int32(fieldS7CommS7PlusFunction, s.S7PlusFunction),
+		s7commEncoder.String("Assembly", s.Assembly.GetStatus()), s7commEncoder.Uint32("SZLID", s.SZLID), s7commEncoder.Uint32("SZLIndex", s.SZLIndex), s7commEncoder.Uint32("SZLRecords", s.SZLRecords),
 		s7commEncoder.String("CommunityID", s.CommunityID),
 	})
 }

@@ -131,6 +131,7 @@ type timeMark struct {
 }
 
 type directionState struct {
+	links  linkAssemblies
 	buf    []byte
 	marks  []timeMark
 	server bool
@@ -247,7 +248,8 @@ func (d *dnp3Reader) frameDirection(fragments core.DataFragments, server, orient
 			continue
 		}
 
-		if data.SkippedBytes != 0 {
+		if data.SkippedBytes != 0 || data.DiscardedBytes != 0 {
+			state.links = nil
 			// Framing cannot survive a gap: the bytes buffered before it belong
 			// to a frame whose remainder was destroyed.
 			if len(state.buf) > 0 {
@@ -347,7 +349,9 @@ func (d *dnp3Reader) consume(state *directionState, oriented bool, emit func(*ty
 
 		// A marker stays ordered ahead of the record that ended the loss.
 		state.loss.flush(emitLoss)
-		emit(d.parseFrame(frame, ts, state.server, oriented))
+		if r := d.assembledFrame(&state.links, frame, ts, state.server, oriented); r != nil {
+			emit(r)
+		}
 		state.discard(start + size)
 
 		scan = 0

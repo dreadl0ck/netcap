@@ -143,6 +143,7 @@ var fieldsDNP3 = []string{
 	fieldDNP3SBOStatus,
 	fieldDNP3SelectTimestamp,
 	fieldDNP3OperateLatency,
+	"Assembly", "ApplicationFragments", "DecodedPoints",
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -208,6 +209,7 @@ func (d *DNP3) CSVRecord() []string {
 		d.SBOStatus,
 		formatInt64(d.SelectTimestamp),
 		formatInt64(d.OperateLatency),
+		dnp3JSONCell(d.Assembly), formatUint32(d.ApplicationFragments), dnp3JSONCell(d.DecodedPoints),
 	})
 }
 
@@ -225,9 +227,9 @@ func (d *DNP3) Time() int64 {
 // JSON returns the JSON representation of the audit record.
 func (d *DNP3) JSON() (string, error) {
 	// convert unix timestamp from nano to millisecond precision for elastic
-	d.Timestamp /= int64(time.Millisecond)
-
-	return jsonMarshaler.MarshalToString(d)
+	v := *d
+	v.Timestamp /= int64(time.Millisecond)
+	return jsonMarshaler.MarshalToString(&v)
 }
 
 // Endpoints, link addresses and object detail are deliberately not labels: one
@@ -324,6 +326,7 @@ func (d *DNP3) Encode() []string {
 		dnp3Encoder.String(fieldDNP3SBOStatus, d.SBOStatus),
 		dnp3Encoder.Int64(fieldDNP3SelectTimestamp, d.SelectTimestamp),
 		dnp3Encoder.Int64(fieldDNP3OperateLatency, d.OperateLatency),
+		dnp3Encoder.String("Assembly", d.Assembly.GetStatus()), dnp3Encoder.Uint32("ApplicationFragments", d.ApplicationFragments), dnp3Encoder.Uint32("DecodedPoints", uint32(len(d.DecodedPoints))),
 	})
 }
 

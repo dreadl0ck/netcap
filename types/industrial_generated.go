@@ -141,10 +141,10 @@ func (r *EtherCAT) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&v)
 }
 func (*EtherCAT) CSVHeader() []string {
-	return filter([]string{"Timestamp", "Context", "FrameType", "Length", "Commands", "WorkingCounters"})
+	return filter([]string{"Timestamp", "Context", "FrameType", "Length", "Commands", "WorkingCounters", "Mailboxes"})
 }
 func (r *EtherCAT) CSVRecord() []string {
-	return filter([]string{formatTimestamp(r.Timestamp), fmt.Sprint(r.Context), fmt.Sprint(r.FrameType), fmt.Sprint(r.Length), fmt.Sprint(r.Commands), fmt.Sprint(r.WorkingCounters)})
+	return filter([]string{formatTimestamp(r.Timestamp), fmt.Sprint(r.Context), fmt.Sprint(r.FrameType), fmt.Sprint(r.Length), fmt.Sprint(r.Commands), fmt.Sprint(r.WorkingCounters), fmt.Sprint(r.Mailboxes)})
 }
 func (r *EtherCAT) Encode() []string {
 	v := r.CSVRecord()
@@ -215,10 +215,10 @@ func (r *IEC104) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&v)
 }
 func (*IEC104) CSVHeader() []string {
-	return filter([]string{"Timestamp", "Context", "Format", "SendSequence", "ReceiveSequence", "UFunction", "TypeID", "CommonAddress", "Cause", "ObjectCount"})
+	return filter([]string{"Timestamp", "Context", "Format", "SendSequence", "ReceiveSequence", "UFunction", "TypeID", "CommonAddress", "Cause", "ObjectCount", "Assembly"})
 }
 func (r *IEC104) CSVRecord() []string {
-	return filter([]string{formatTimestamp(r.Timestamp), fmt.Sprint(r.Context), fmt.Sprint(r.Format), fmt.Sprint(r.SendSequence), fmt.Sprint(r.ReceiveSequence), fmt.Sprint(r.UFunction), fmt.Sprint(r.TypeID), fmt.Sprint(r.CommonAddress), fmt.Sprint(r.Cause), fmt.Sprint(r.ObjectCount)})
+	return filter([]string{formatTimestamp(r.Timestamp), fmt.Sprint(r.Context), fmt.Sprint(r.Format), fmt.Sprint(r.SendSequence), fmt.Sprint(r.ReceiveSequence), fmt.Sprint(r.UFunction), fmt.Sprint(r.TypeID), fmt.Sprint(r.CommonAddress), fmt.Sprint(r.Cause), fmt.Sprint(r.ObjectCount), fmt.Sprint(r.Assembly)})
 }
 func (r *IEC104) Encode() []string {
 	v := r.CSVRecord()
@@ -252,10 +252,10 @@ func (r *MMS) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&v)
 }
 func (*MMS) CSVHeader() []string {
-	return filter([]string{"Timestamp", "Context", "PDUType", "InvokeID", "Service", "ServiceError"})
+	return filter([]string{"Timestamp", "Context", "PDUType", "InvokeID", "Service", "ServiceError", "Assembly"})
 }
 func (r *MMS) CSVRecord() []string {
-	return filter([]string{formatTimestamp(r.Timestamp), fmt.Sprint(r.Context), fmt.Sprint(r.PDUType), fmt.Sprint(r.InvokeID), fmt.Sprint(r.Service), fmt.Sprint(r.ServiceError)})
+	return filter([]string{formatTimestamp(r.Timestamp), fmt.Sprint(r.Context), fmt.Sprint(r.PDUType), fmt.Sprint(r.InvokeID), fmt.Sprint(r.Service), fmt.Sprint(r.ServiceError), fmt.Sprint(r.Assembly)})
 }
 func (r *MMS) Encode() []string {
 	v := r.CSVRecord()
@@ -289,10 +289,10 @@ func (r *AMS) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&v)
 }
 func (*AMS) CSVHeader() []string {
-	return filter([]string{"Timestamp", "Context", "Command", "Length", "ADSCommand", "InvokeID", "ErrorCode", "TargetNetID", "SourceNetID"})
+	return filter([]string{"Timestamp", "Context", "Command", "Length", "ADSCommand", "InvokeID", "ErrorCode", "TargetNetID", "SourceNetID", "Assembly"})
 }
 func (r *AMS) CSVRecord() []string {
-	return filter([]string{formatTimestamp(r.Timestamp), fmt.Sprint(r.Context), fmt.Sprint(r.Command), fmt.Sprint(r.Length), fmt.Sprint(r.ADSCommand), fmt.Sprint(r.InvokeID), fmt.Sprint(r.ErrorCode), fmt.Sprint(r.TargetNetID), fmt.Sprint(r.SourceNetID)})
+	return filter([]string{formatTimestamp(r.Timestamp), fmt.Sprint(r.Context), fmt.Sprint(r.Command), fmt.Sprint(r.Length), fmt.Sprint(r.ADSCommand), fmt.Sprint(r.InvokeID), fmt.Sprint(r.ErrorCode), fmt.Sprint(r.TargetNetID), fmt.Sprint(r.SourceNetID), fmt.Sprint(r.Assembly)})
 }
 func (r *AMS) Encode() []string {
 	v := r.CSVRecord()

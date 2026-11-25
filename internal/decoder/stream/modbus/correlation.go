@@ -190,6 +190,8 @@ func enrichResponse(r *pendingRequest, m *types.Modbus) {
 	case 24:
 		// The response carries the queue contents, the request the pointer.
 		m.HasAddress, m.Address = r.hasAddress, r.address
+	case 43:
+		m.DeviceIDObjectID = r.deviceIDObjectID
 	}
 }
 
