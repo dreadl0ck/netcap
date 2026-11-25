@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"maps"
 	"net/http"
-	"path/filepath"
 	"sync/atomic"
 )
 
@@ -48,18 +47,18 @@ func (s *Server) handleStats(w http.ResponseWriter, r *http.Request) {
 	collector := s.collector
 	s.mu.RUnlock()
 
-	// Populate service mode specific fields
-	if isServiceMode && s.jobQueue != nil {
+	if isServiceMode {
+		stats = ProcessingStats{}
+		errors = map[string]FileError{}
 		stats.QueueLength = s.captureQueueLength()
 		stats.JobsScheduled = atomic.LoadInt64(&s.jobsScheduled)
 		stats.JobsProcessed = atomic.LoadInt64(&s.jobsProcessed)
-
-		// Get currently processing job
-		s.currentJobMutex.RLock()
-		if s.currentProcessing != nil {
-			stats.CurrentFile = filepath.Base(s.currentProcessing.InputFile)
+		if selected, err := s.resolveCaptureSelection(r); err == nil {
+			if session, ok := s.visibleSession(r, selected.SessionID); ok && session.Status == StatusProcessing {
+				stats.CurrentFile = session.InputFilename
+				stats.TotalPackets = session.PacketsTotal
+			}
 		}
-		s.currentJobMutex.RUnlock()
 	} else if !isServiceMode && collector != nil {
 		// Local mode: populate stats from collector (similar to service mode)
 		stats.PacketsProcessed = collector.GetCurrentPacketCount()

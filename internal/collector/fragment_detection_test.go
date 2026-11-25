@@ -159,7 +159,7 @@ func TestFragmentDetectionInterleavedCollector(t *testing.T) {
 							} else if kind == "tcp" {
 								wantName, wantCount = "intel.c2", 2
 							}
-							if a.Name != wantName || a.Count != wantCount || a.LastSeen != (base+5)*1e9 {
+							if a.RuleName != wantName || a.Count != wantCount || a.LastSeen != (base+5)*1e9 {
 								t.Fatalf("unexpected detection semantics: %v", a)
 							}
 							if reference == nil {

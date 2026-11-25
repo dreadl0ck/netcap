@@ -83,7 +83,7 @@ import { message as finalCopyMessage } from "../lib/i18n";
 
 type FingerprintSortField = 'fingerprint' | 'type' | 'count' | 'hosts';
 type SortOrder = 'asc' | 'desc';
-type FingerprintTypeFilter = 'all' | 'JA4' | 'JA4S' | 'JA4H' | 'JA4X' | 'JA4T' | 'JA4TS' | 'JA4SSH' | 'DHCP';
+type FingerprintTypeFilter = 'all' | 'JA3' | 'JA3S' | 'JA4' | 'JA4S' | 'JA4H' | 'JA4X' | 'JA4T' | 'JA4TS' | 'JA4SSH' | 'DHCP';
 
 export default function FingerprintsPage() {
   const __uiLocale = useUILocale();
@@ -388,9 +388,9 @@ export default function FingerprintsPage() {
             learnHint={translate("ui:m_1d6b3495ec3022d0d0ba")} /><FormControl size="small" sx={{ minWidth: 180 }}><Select data-learn={i18nText("ui:m_f1effe0c5f780538aa59")}
               value={filterType}
               onChange={(e) => {
-                setFilterType(e.target.value as 'all' | 'JA4' | 'JA4S' | 'JA4H' | 'JA4X' | 'JA4T' | 'JA4TS' | 'JA4SSH' | 'DHCP');
+                 setFilterType(e.target.value as FingerprintTypeFilter);
                 setPage(0);
-              }}><MenuItem value="all">{i18nText("ui:m_54b1a113c48b3b056e29")}</MenuItem><MenuItem value="JA4">{i18nText("ui:m_1ecdd91fab83aec71251")}</MenuItem><MenuItem value="JA4S">{i18nText("ui:m_882a5993aa766ba31098")}</MenuItem><MenuItem value="JA4H">{i18nText("ui:m_8e4ec15e25640c1bba90")}</MenuItem><MenuItem value="JA4X">{i18nText("ui:m_a3e21dc5642ba9be62ea")}</MenuItem><MenuItem value="JA4T">{i18nText("ui:m_de8b6468912754437181")}</MenuItem><MenuItem value="JA4TS">{i18nText("ui:m_9f6a56b8e786c8e3f511")}</MenuItem><MenuItem value="JA4SSH">{i18nText("ui:m_8d90fe9abe7685569b49")}</MenuItem><MenuItem value="DHCP">DHCP</MenuItem></Select></FormControl><Button data-learn={i18nText("ui:m_12004b6de9ca0ff4c8bc")}
+               }}><MenuItem value="all">{i18nText("ui:m_54b1a113c48b3b056e29")}</MenuItem><MenuItem value="JA3">JA3</MenuItem><MenuItem value="JA3S">JA3S</MenuItem><MenuItem value="JA4">{i18nText("ui:m_1ecdd91fab83aec71251")}</MenuItem><MenuItem value="JA4S">{i18nText("ui:m_882a5993aa766ba31098")}</MenuItem><MenuItem value="JA4H">{i18nText("ui:m_8e4ec15e25640c1bba90")}</MenuItem><MenuItem value="JA4X">{i18nText("ui:m_a3e21dc5642ba9be62ea")}</MenuItem><MenuItem value="JA4T">{i18nText("ui:m_de8b6468912754437181")}</MenuItem><MenuItem value="JA4TS">{i18nText("ui:m_9f6a56b8e786c8e3f511")}</MenuItem><MenuItem value="JA4SSH">{i18nText("ui:m_8d90fe9abe7685569b49")}</MenuItem><MenuItem value="DHCP">DHCP</MenuItem></Select></FormControl><Button data-learn={i18nText("ui:m_12004b6de9ca0ff4c8bc")}
             variant="outlined" 
             startIcon={<RefreshIcon />} 
             onClick={handleRefresh}

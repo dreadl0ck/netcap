@@ -20,6 +20,7 @@
 package file
 
 import (
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -465,6 +466,16 @@ func savePreparedFile(conv *core.ConversationInfo, source, name string, extracti
 		RecordExtractionIssue(analysisErr)
 		return analysisErr
 	}
+	if mediaType, _, _ := mime.ParseMediaType(contentType); mediaType == "text/html" && analysis.TrueFileType == "application/javascript" {
+		prefix := content.bytes
+		if content.facts != nil {
+			prefix = content.facts.prefix
+		}
+		if declaredHTMLDocument(prefix) {
+			analysis.TrueFileType = "text/html"
+			analysis.TypeMismatch = false
+		}
+	}
 
 	// AI-based file type classification (if enabled)
 	var magikaResult *magikapkg.Result
@@ -504,6 +515,15 @@ func savePreparedFile(conv *core.ConversationInfo, source, name string, extracti
 	sanitizedSource, sanitizedHost, sanitizedContentType, sanitizedCTypeDetected, sanitizedFlowDirection :=
 		sanitizeStringFields(source, host, contentType, cTypeDetected, flowDirection)
 
+	// An identical representation of the same directional wire span is one observation.
+	// Different transfers and different partial representations remain independent.
+	if cfg.FileExtraction.Advanced.DeduplicateFiles && depth == 0 && protocol == "HTTP" && conv.ArtifactRangeEnd > conv.ArtifactRangeStart && conv.Ident != "" {
+		key := sha256.Sum256(fmt.Appendf(nil, "%q %q %q %q %d %d %d %s %q", root, conv.NetworkScope, conv.Ident, flowDirection,
+			conv.FirstClientPacket.UnixNano(), conv.ArtifactRangeStart, conv.ArtifactRangeEnd, digest, completeness))
+		if GetDedupCache().duplicateOccurrence(key) {
+			return nil
+		}
+	}
 	// Write file record with security analysis fields and compression info
 	WriteFileEnhanced(&types.File{
 		Timestamp:           conv.FirstClientPacket.UnixNano(),

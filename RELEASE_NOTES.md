@@ -1,3 +1,16 @@
+## v0.16.15 — clearer findings and isolated showcase sessions
+
+| Area | Change |
+| --- | --- |
+| Service mode | Capture selection is per browser tab. Private uploads are scoped to the visitor, shared showcase results are read-only, and file previews, downloads, and charts follow the selected capture. |
+| Detection | Surfaces SMB probe and backdoor responses, command-bearing HTTP requests, onion names in cleartext traffic, and UDP fan-out. Repeated credential and SMTP observations no longer flood the findings view. |
+| Alert accuracy | Uses observed connection direction for port findings, recognizes TLS on 443, and correlates Tor-like certificates with their own flows. Routine inventory is separated from findings. |
+| Artifacts | Improves HTML, JavaScript, Flash, and WOFF classification. Displays partial extractions and reports artifact-input loss separately from analysis failures. |
+| TLS and vulnerabilities | Records JA3 and JA3S and adds fingerprint filters. Passive CVE findings require an applicable version or version range. |
+| Showcase | Bounded Files and Fingerprints views, capture summaries with evidence links, and visible UDP retention limits. Service runs record the detection-rule pack digest. |
+
+Full changes: https://github.com/dreadl0ck/netcap/compare/v0.16.14...v0.16.15
+
 ## v0.16.14 — evaluator follow-up
 
 | Area | Change |

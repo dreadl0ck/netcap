@@ -42,6 +42,8 @@
         "validUntil": 1800000100000000000
       }
     ],
+    "smtpRelays": null,
+    "internalNetworks": null,
     "beaconSamples": 8,
     "beaconJitter": 0.1,
     "beaconMinIntervalNS": 10000000000,
@@ -123,7 +125,7 @@
             "sensor": "qualification",
             "interface": "pcap"
           },
-          "kind": "dns",
+          "kind": "dns.nxdomain",
           "srcIP": "192.0.2.10",
           "dstIP": "198.51.100.10",
           "srcPort": 40000,
@@ -137,7 +139,7 @@
             "sensor": "qualification",
             "interface": "pcap"
           },
-          "kind": "dns",
+          "kind": "dns.nxdomain",
           "srcIP": "192.0.2.10",
           "dstIP": "198.51.100.10",
           "srcPort": 40000,
@@ -151,7 +153,7 @@
             "sensor": "qualification",
             "interface": "pcap"
           },
-          "kind": "dns",
+          "kind": "dns.nxdomain",
           "srcIP": "192.0.2.10",
           "dstIP": "198.51.100.10",
           "srcPort": 40000,
@@ -165,7 +167,7 @@
             "sensor": "qualification",
             "interface": "pcap"
           },
-          "kind": "dns",
+          "kind": "dns.nxdomain",
           "srcIP": "192.0.2.10",
           "dstIP": "198.51.100.10",
           "srcPort": 40000,
@@ -179,7 +181,7 @@
             "sensor": "qualification",
             "interface": "pcap"
           },
-          "kind": "dns",
+          "kind": "dns.nxdomain",
           "srcIP": "192.0.2.10",
           "dstIP": "198.51.100.10",
           "srcPort": 40000,
@@ -193,7 +195,7 @@
             "sensor": "qualification",
             "interface": "pcap"
           },
-          "kind": "dns",
+          "kind": "dns.nxdomain",
           "srcIP": "192.0.2.10",
           "dstIP": "198.51.100.10",
           "srcPort": 40000,
@@ -207,7 +209,7 @@
             "sensor": "qualification",
             "interface": "pcap"
           },
-          "kind": "dns",
+          "kind": "dns.nxdomain",
           "srcIP": "192.0.2.10",
           "dstIP": "198.51.100.10",
           "srcPort": 40000,
@@ -221,7 +223,7 @@
             "sensor": "qualification",
             "interface": "pcap"
           },
-          "kind": "dns",
+          "kind": "dns.nxdomain",
           "srcIP": "192.0.2.10",
           "dstIP": "198.51.100.10",
           "srcPort": 40000,
@@ -235,7 +237,7 @@
             "sensor": "qualification",
             "interface": "pcap"
           },
-          "kind": "dns",
+          "kind": "dns.nxdomain",
           "srcIP": "192.0.2.10",
           "dstIP": "198.51.100.10",
           "srcPort": 40000,
@@ -249,7 +251,7 @@
             "sensor": "qualification",
             "interface": "pcap"
           },
-          "kind": "dns",
+          "kind": "dns.nxdomain",
           "srcIP": "192.0.2.10",
           "dstIP": "198.51.100.10",
           "srcPort": 40000,
@@ -260,7 +262,8 @@
       ],
       "expected": [
         "dns.dga"
-      ]
+      ],
+      "capturedExpected": []
     },
     {
       "name": "tunnel-dns",
@@ -897,7 +900,7 @@
           "srcIP": "192.0.2.10",
           "dstIP": "198.51.100.10",
           "srcPort": 40000,
-          "dstPort": 23,
+          "dstPort": 21,
           "seq": 99
         },
         {
@@ -910,14 +913,15 @@
           "srcIP": "192.0.2.10",
           "dstIP": "198.51.100.10",
           "srcPort": 40000,
-          "dstPort": 23,
+          "dstPort": 21,
           "seq": 100,
-          "payload": "cXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcQ=="
+          "payload": "VVNFUiB0cmFpbmluZw0K"
         }
       ],
       "expected": [
         "policy.cleartext-service"
-      ]
+      ],
+      "capturedExpected": []
     },
     {
       "name": "ssh-transfer",

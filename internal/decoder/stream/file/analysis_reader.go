@@ -23,6 +23,10 @@ type artifactFacts struct {
 var artifactTokens = []string{"$PSVersionTable", "[CmdletBinding", "Invoke-Expression", "-ExecutionPolicy", "function(", "var ", "const ", "let ", "Sub ", "Function ", "End Sub", "EncryptedPackage", "StrongEncryptionDataSpace", ":"}
 var firstLineTokens = []string{"python", "bash", "/sh", "perl", "ruby", "node"}
 var standalonePowerShellParam = regexp.MustCompile(`(?im)^[\t ]*param[\t ]*\([[:space:]]*[\[$]`)
+var htmlStart = regexp.MustCompile(`(?i)^<(?:html|head|body|title|meta|script|link|style|iframe|form|div|span|table|img|noscript)(?:[\s/>])`)
+var htmlStructure = regexp.MustCompile(`(?i)<(?:html|head|body|script|iframe|form|div|table)(?:[\s/>])`)
+
+const artifactSniffBytes = 4096
 
 func (f *artifactFacts) feed(window []byte, overlap int) {
 	data := window[overlap:]
@@ -30,7 +34,7 @@ func (f *artifactFacts) feed(window []byte, overlap int) {
 		f.tokens = map[string]bool{}
 		f.firstLine = map[string]bool{}
 	}
-	f.prefix = append(f.prefix, data[:min(len(data), 512-len(f.prefix))]...)
+	f.prefix = append(f.prefix, data[:min(len(data), artifactSniffBytes-len(f.prefix))]...)
 	for _, b := range data {
 		f.counts[b]++
 	}
@@ -131,11 +135,31 @@ func (facts *artifactFacts) analyze(reader io.ReaderAt, name string) (*FileAnaly
 // markupType is text/html or text/xml when the content starts as a markup
 // document, by the WHATWG sniffing rules net/http implements.
 func markupType(prefix []byte) string {
+	prefix = bytes.TrimSpace(prefix[:min(len(prefix), artifactSniffBytes)])
+	prefix = bytes.TrimSpace(bytes.TrimPrefix(prefix, []byte{0xef, 0xbb, 0xbf}))
+	for bytes.HasPrefix(prefix, []byte("<!--")) {
+		_, rest, ok := bytes.Cut(prefix, []byte("-->"))
+		if !ok {
+			break
+		}
+		prefix = bytes.TrimSpace(rest)
+	}
 	sniffed := http.DetectContentType(prefix)
 	for _, typ := range []string{"text/html", "text/xml"} {
 		if strings.HasPrefix(sniffed, typ) {
 			return typ
 		}
 	}
+	if htmlStart.Match(prefix) {
+		return "text/html"
+	}
 	return ""
+}
+
+func declaredHTMLDocument(prefix []byte) bool {
+	// Implied HTML documents can begin with plain text. Do not reinterpret JS
+	// string literals (including document.write) as leading document markup.
+	prefix = bytes.TrimSpace(prefix[:min(len(prefix), artifactSniffBytes)])
+	loc := htmlStructure.FindIndex(prefix)
+	return loc != nil && !bytes.ContainsAny(prefix[:loc[0]], "\"'`{}()=;")
 }

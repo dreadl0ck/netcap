@@ -1,7 +1,8 @@
 # Releasing Netcap
 
-Run from a clean `master` that matches `origin/master`, on the release Mac. The
-release builds macOS locally, Linux in Docker, and signs Windows through
+Run from a clean `master` that matches `origin/master`, on the release Mac.
+Build Linux release images in Dokploy and package from digest-pinned images
+using `NETCAP_RELEASE_IMAGES`. Build macOS locally and sign Windows through
 GoReleaser.
 
 ## Prerequisites
@@ -18,6 +19,7 @@ GoReleaser.
 | Docker can pull images | Docker Desktop uses a manual proxy on `127.0.0.1:1030`; start it |
 | Frontend licenses readable | `pnpm install --frozen-lockfile --force` in `cmd/capture/webui/frontend` |
 | Windows signing credentials | `SSL_COM_ENV_FILE`, defaulting to `../products/.env` |
+| Native binary hygiene | Rust `llvm-tools` and Homebrew LLVM; Linux image receipt keys: `commit`, `builders` (`alpine`, `ubuntu`), `images` (`alpine`, `alpine-nodpi`, `ubuntu`, `ubuntu-nodpi`) |
 
 Regenerate `types/netcap.pb.go` (`zeus gen-proto-release`) in an ordinary commit
 when `types/netcap.proto` changes; the release no longer does it.
@@ -28,7 +30,11 @@ when `types/netcap.proto` changes; the release no longer does it.
    commit and push both.
 2. Run the gates for the release: `make recheck-v01613` (or the newest
    `recheck-*` target) and `make try-parity`.
-3. `export YARA_X_PREFIX="$PWD/.native/yara-x"` and run `zeus release`.
+3. Export `YARA_X_PREFIX`. Run `zeus release-preflight`, `zeus licenses`,
+   `zeus remove-dist`, `zeus gen-version`, then `zeus version-bump`.
+4. Build the four Linux candidates from the pushed tag and record their digests
+   plus both YARA-X builder digests in `NETCAP_RELEASE_IMAGES`. Run
+   `zeus release-resume` with Homebrew LLVM on `PATH`.
 
 | Phase | Steps | On failure |
 | --- | --- | --- |
@@ -73,6 +79,11 @@ Keep the runtime caps on the Dokploy application: `cpuLimit=4000000000`
    Archive legacy rule YAML outside the rules directory in the backed-up data
    volume. Public try should keep the default embedded pack; compare
    `/api/config?sessionId=…` `detectionRulePack.sha256` across all 20 runs.
+   The demo captures are startup preloads from `/data/netcap-service/pcaps`,
+   backed by `/srv/netcap-try-server/data/netcap-service/pcaps`. Use names and
+   SHA-256 values from `scripts/try-pcaps.json`; `/api/upload` creates private
+   expiring sessions. For scoring, run `scripts/score-showcase-iocs.py` with the
+   replay workdir and `netcap-eval-scoring/showcase/v0.16.14` reference.
 5. Deploy: set the app's image to `<tag>@<digest>` and deploy, with the
    rollback image in the deployment description. The service updates stop-first.
 6. Verify: `https://try.netcap.io/api/files/input` reports 20/20 complete,
@@ -89,6 +100,9 @@ build. Confirm Magika, YARA-X and `kev.status` are available in staging before
 promoting this target. `NC_SHOWCASE_FILE_CONFIG` is applied only to preloaded
 captures. Any pre-existing private upload without a browser owner is accessible
 only to the operator until normal service expiry.
+
+For release builds, use a digest-pinned builder that ran `scripts/build-yara-x.sh`
+with remapped paths, and set `NETCAP_RELEASE_HYGIENE=1` for Try.
 
 ## Pitfalls
 

@@ -20,6 +20,7 @@ type ApplicationObservation struct {
 	Kind, SrcIP, DstIP                             string
 	SrcPort, DstPort                               uint16
 	Method, Path, Host, CommunityID, Qualification string
+	ReferrerHost, RedirectHost                     string
 	Proto                                          string
 	Status                                         int
 	Executable                                     bool
@@ -33,6 +34,15 @@ func Observation(m proto.Message) (ApplicationObservation, bool) {
 			return o, false
 		}
 		o = ApplicationObservation{At: r.Timestamp, Kind: "http", SrcIP: r.SrcIP, DstIP: r.DstIP, SrcPort: uint16(r.SrcPort), DstPort: uint16(r.DstPort), Method: r.Method, Path: r.URL, Host: r.Host, Status: int(r.StatusCode), CommunityID: r.CommunityID, Qualification: r.ReassemblyStatus, Proto: r.Proto}
+		o.ReferrerHost = observedHTTPHost(r.Referer)
+		if o.Status >= 300 && o.Status < 400 {
+			for k, v := range r.ResponseHeader {
+				if strings.EqualFold(k, "Location") {
+					o.RedirectHost = observedHTTPHost(v)
+					break
+				}
+			}
+		}
 		o.RangeTransfer = r.StatusCode == 206
 		for _, q := range r.ParseQualifications {
 			if q == "decrypted-tls-key-log" {
@@ -45,10 +55,14 @@ func Observation(m proto.Message) (ApplicationObservation, bool) {
 			}
 		}
 	case *types.File:
-		if r.Protocol != "HTTP" || !(r.IsPEExecutable || r.IsELFExecutable || r.IsMachO) {
+		flash := r.TrueFileType == "application/x-shockwave-flash"
+		if r.Protocol != "HTTP" || !(flash || r.IsPEExecutable || r.IsELFExecutable || r.IsMachO) {
 			return o, false
 		}
 		o = ApplicationObservation{At: r.Timestamp, Kind: "executable", SrcIP: r.SrcIP, DstIP: r.DstIP, SrcPort: uint16(r.SrcPort), DstPort: uint16(r.DstPort), CommunityID: r.CommunityID, Executable: true}
+		if flash {
+			o.Kind, o.Host, o.Executable = "flash", r.Host, false
+		}
 	case *types.SMB:
 		if r.Username == "" || r.NTLMVersion == "" || r.IsEncrypted || !strings.Contains(r.CommandName, "SESSION_SETUP") {
 			return o, false
@@ -104,6 +118,7 @@ type ApplicationEngine struct {
 	beacons          map[string][]int64
 	aggregates       *aggregator
 	last             map[string]int64
+	flashReferral    map[string]flashReferral
 	Alerts, Overflow uint64
 	Late             uint64
 }
@@ -214,6 +229,11 @@ func (e *ApplicationEngine) Observe(o ApplicationObservation) (alerts []*types.A
 		data, _ := json.Marshal(Evidence{Schema: 1, Detector: name, Classification: class, Scope: o.Scope, FirstSeen: first, LastSeen: o.At, Observed: uint64(count), Threshold: uint64(threshold), WindowNS: e.config.WindowNS, Samples: samples, Limitations: limitations})
 		alert := &types.Alert{Timestamp: o.At, Name: name, RuleName: name, RecordType: "ApplicationDetection", SrcIP: o.SrcIP, DstIP: o.DstIP, SrcPort: fmt.Sprint(o.SrcPort), DstPort: fmt.Sprint(o.DstPort), Severity: severity, Description: name + ": " + class, CommunityID: o.CommunityID, Tags: []string{"application-detection", class}, MatchedRecord: string(data)}
 		alerts = append(alerts, e.aggregates.add(id, alert)...)
+	}
+	if referral, ok := e.observeFlashDelivery(o); ok {
+		add("http.flash-referral", "medium", "behavioral-suspicion", 1, 1, referral.at,
+			[]string{"referrer=" + referral.host, "flash-host=" + canonicalHTTPHost(o.Host)},
+			"Observed cross-site referral followed by Flash content; exploit execution is not established")
 	}
 	if o.Kind == "ntlm" && globalAddress(o.DstIP) {
 		add("policy.public-smb-ntlm", "medium", "policy-observation", 1, 1, o.At, []string{"NTLM identity observed in SMB session setup to a public endpoint"}, "Public addressing does not establish unauthorized authentication or a successful relay")

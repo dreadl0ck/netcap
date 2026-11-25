@@ -9,10 +9,12 @@ import (
 // which fed File Type Mismatch and Document With Embedded Script noise.
 func TestHTMLWithScriptStaysHTML(t *testing.T) {
 	for content, want := range map[string]string{
-		"<!DOCTYPE html><html><head><script>var x = function(){};</script></head></html>": "text/html",
-		"<html><body onload=\"f()\"><script>const a = 1;</script></body></html>":         "text/html",
-		"<?xml version=\"1.0\"?><root/>":                                                  "text/xml",
-		"var x = 1;\nfunction f() { return x; }\n":                                        "application/javascript",
+		"<!DOCTYPE html><html><head><script>var x = function(){};</script></head></html>":                               "text/html",
+		"<html><body onload=\"f()\"><script>const a = 1;</script></body></html>":                                        "text/html",
+		"<?xml version=\"1.0\"?><root/>":                                                                                "text/xml",
+		"var x = 1;\nfunction f() { return x; }\n":                                                                      "application/javascript",
+		"\ufeff\n<!--" + strings.Repeat("tag-free ", 90) + "--><iframe src='/item'></iframe><script>var x = 1</script>": "text/html",
+		`var page = "<html><body>Example</body></html>";`:                                                               "application/javascript",
 	} {
 		facts := &artifactFacts{}
 		facts.feed([]byte(content), 0)

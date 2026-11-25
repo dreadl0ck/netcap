@@ -36,7 +36,7 @@ const maxApplicationQueueBytes = 16 << 20
 
 func applicationObservationBytes(o networkdetect.ApplicationObservation) int64 {
 	// Allow two slice slots per observation for append's spare capacity.
-	return 2*int64(unsafe.Sizeof(o)) + int64(len(o.Kind)+len(o.SrcIP)+len(o.DstIP)+len(o.Method)+len(o.Path)+len(o.Host)+len(o.CommunityID)+len(o.Qualification)+len(o.Scope.Sensor)+len(o.Scope.Interface)+2*len(o.Scope.VLANs))
+	return 2*int64(unsafe.Sizeof(o)) + int64(len(o.Kind)+len(o.SrcIP)+len(o.DstIP)+len(o.Method)+len(o.Path)+len(o.Host)+len(o.CommunityID)+len(o.Qualification)+len(o.Scope.Sensor)+len(o.Scope.Interface)+2*len(o.Scope.VLANs)+len(o.ReferrerHost)+len(o.RedirectHost))
 }
 
 func endpoints(a string, p int32, b string, q int32) string {

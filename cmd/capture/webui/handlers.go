@@ -104,7 +104,18 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 			}
 			response.SessionID, response.OutputDir, response.ActiveInputFile = id, session.OutputDir, session.InputFile
 			response.Coverage, response.Status, response.ErrorMessage = session.Coverage, session.Status, session.ErrorMessage
+			response.ReadOnly = session.IsPreloaded && !captureAdminAuthorized(r)
 			response.IsProcessing = session.Status == StatusQueued || session.Status == StatusProcessing
+		}
+	}
+	if response.OutputDir != "" && !response.IsProcessing {
+		if data, err := artifactio.Read(r.Context(), response.OutputDir, "udp-stream-evidence.json", 4096); err == nil {
+			var limit struct {
+				Omitted int64 `json:"omittedFlows"`
+			}
+			if json.Unmarshal(data, &limit) == nil {
+				response.UDPOmittedStreams = limit.Omitted
+			}
 		}
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -2794,10 +2805,10 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	RespondJSON(w, http.StatusOK, map[string]any{
-		"files":      extractedFiles,
+		"files":           extractedFiles,
 		"partialMetadata": partialMetadata,
-		"totalCount": len(extractedFiles),
-		"filesDir":   filesDir,
+		"totalCount":      len(extractedFiles),
+		"filesDir":        filesDir,
 	})
 }
 

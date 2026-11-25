@@ -41,11 +41,12 @@ type FileHandle struct {
 
 // FileMetadata contains contextual information about an extracted file
 type FileMetadata struct {
-	Protocol        string
-	ParentFileID    string
-	Depth           int
-	ExtractionError error
-	Timestamp       int64
+	RangeStart, RangeEnd int64
+	Protocol             string
+	ParentFileID         string
+	Depth                int
+	ExtractionError      error
+	Timestamp            int64
 	// Network context
 	ConnectionUID string
 	FlowDirection string // "client_to_server" or "server_to_client"

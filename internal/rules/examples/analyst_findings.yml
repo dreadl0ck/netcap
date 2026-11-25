@@ -56,7 +56,7 @@ rules:
   - name: TLS On Non-Standard Port To Public IP
     description: A TLS flow to a public server uses a non-standard port and has not been identified as Tor.
     type: Connection
-    expression: 'TCPInitiatorObserved && Established && IsPublicIP(DstIP) && IsPrivateIP(SrcIP) && !("TOR" in Applications) && (Sni != "" || "TLS" in Applications || "SSL" in Applications || "HTTPS" in Applications) && !(ParsePort(DstPort) in [443, 8443, 465, 587, 993, 995, 636, 853, 989, 990, 5061, 5223, 5228, 3389, 25, 110, 143, 4443, 8883, 9443, 2083, 2087, 2096, 10443])'
+    expression: 'TCPInitiatorObserved && Established && IsPublicIP(DstIP) && IsPrivateIP(SrcIP) && TorLikeCertificateSHA256 == "" && !("TOR" in Applications) && (Sni != "" || "TLS" in Applications || "SSL" in Applications || "HTTPS" in Applications) && !(ParsePort(DstPort) in [443, 8443, 465, 587, 993, 995, 636, 853, 989, 990, 5061, 5223, 5228, 3389, 25, 110, 143, 4443, 8883, 9443, 2083, 2087, 2096, 10443])'
     severity: medium
     mitre: ["T1571", "T1573.002"]
     tags: ["c2", "tls"]

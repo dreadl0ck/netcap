@@ -85,7 +85,7 @@ RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache
     GOPACKET_VERSION=$(go list -m -f '{{.Version}}{{with .Replace}}+{{.Version}}{{end}}' github.com/gopacket/gopacket) && \
     GO_DPI_VERSION=$(grep "github.com/dreadl0ck/go-dpi" /netcap/go.mod | grep -v indirect | awk '{print $2}') && \
     mkdir -p /netcap/bin && \
-    GOWORK=off GOOS=linux GOARCH=amd64 go build -trimpath \
+    GOWORK=off GOOS=linux GOARCH=amd64 go build -trimpath -buildvcs=false \
     -ldflags "-r /usr/local/lib -s -w \
         -X github.com/dreadl0ck/netcap.Version=v${VERSION} \
         -X github.com/dreadl0ck/netcap.Commit=${COMMIT} \
@@ -96,7 +96,7 @@ RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache
     -o /netcap/bin/netcap github.com/dreadl0ck/netcap/cmd/net
 
 # Runtime stage
-FROM --platform=linux/amd64 alpine:3.24.4@sha256:93b41ef40b1677fce8fcc64ff4af09daddfacf5040afde618bc46c1e2d1cc7d4 AS service
+FROM --platform=linux/amd64 alpine:3.24.4@sha256:93b41ef40b1677fce8fcc64ff4af09daddfacf5040afde618bc46c1e2d1cc7d4 AS os-runtime
 
 LABEL maintainer="Philipp Mieden <dreadl0ck@protonmail.ch>"
 LABEL description="Netcap Service Mode - Upload and analyze PCAP files (with DPI support)"
@@ -115,6 +115,22 @@ RUN apk add --no-cache \
     libgcc \
     json-c
 
+FROM builder AS service-binaries
+ARG NETCAP_RELEASE_HYGIENE=0
+RUN apk add --no-cache binutils python3
+RUN --mount=from=os-runtime,target=/runtime \
+    mkdir -p /shipped/usr/local/bin /shipped/usr/local/lib /shipped/usr/lib && \
+    cp /netcap/bin/netcap /shipped/usr/local/bin/net && \
+    cp -a /usr/local/lib/*.so* /shipped/usr/local/lib/ && \
+    cp -a /usr/lib/libndpi.so* /shipped/usr/lib/ && \
+    cp -L /runtime/usr/lib/libstdc++.so.6 /shipped/usr/lib/libstdc++.so.6 && \
+    if [ "$NETCAP_RELEASE_HYGIENE" = 1 ]; then \
+        python3 scripts/strip-linux-runtime.py --debug-dir /debug /shipped/usr/local/lib /shipped/usr/lib && \
+        python3 scripts/check-binary-hygiene.py /shipped; \
+    fi
+
+FROM os-runtime AS service
+
 # Give tcpdump the necessary capabilities to read pcap files without root
 RUN setcap cap_net_raw,cap_net_admin=eip /usr/bin/tcpdump
 
@@ -126,11 +142,9 @@ RUN addgroup -g 1000 netcap && \
 WORKDIR /home/netcap
 
 # Copy binary and DPI libraries from builder
-COPY --from=builder /netcap/bin/netcap /usr/local/bin/net
+COPY --from=service-binaries /shipped/ /
 COPY --from=builder /netcap/LICENSE /usr/share/licenses/netcap/LICENSE
 COPY --from=builder /netcap/legal /usr/share/licenses/netcap/
-COPY --from=builder /usr/local/lib/* /usr/local/lib/
-COPY --from=builder /usr/lib/libndpi.so* /usr/lib/
 
 # Run ldconfig to register the shared libraries and set up the dynamic linker cache
 RUN ldconfig /usr/lib /usr/local/lib || true
@@ -167,14 +181,28 @@ VOLUME ["/data"]
 # Use entrypoint script to bootstrap databases
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
+FROM --platform=linux/amd64 alpine:3.24.4@sha256:93b41ef40b1677fce8fcc64ff4af09daddfacf5040afde618bc46c1e2d1cc7d4 AS showcase-magika-archive
+ADD --checksum=sha256:4ce475c965cd20e724b5fc53e8a303a479b9d8649beef8721d05e9b3988fbab4 https://github.com/google/magika/releases/download/cli/v1.0.2/magika-x86_64-unknown-linux-gnu.tar.xz /tmp/magika.tar.xz
+RUN mkdir /magika && tar -xJOf /tmp/magika.tar.xz magika-x86_64-unknown-linux-gnu/magika > /magika/magika && \
+    chmod 0755 /magika/magika
+
+FROM --platform=linux/amd64 ubuntu:24.04@sha256:9a04f13b3f80ef056361e30868593b1cfd2279fe19e4081cb93a90bf56819d6a AS showcase-magika
+COPY --from=showcase-magika-archive /magika/ /magika/
+COPY scripts/strip-linux-runtime.py scripts/check-binary-hygiene.py /tmp/
+RUN apt-get update && apt-get install -y --no-install-recommends binutils python3
+RUN cp -L /lib64/ld-linux-x86-64.so.2 /magika/ && \
+    ldd /magika/magika | awk '/=> \/lib\// {print $3}' | xargs -r cp -L -t /magika && \
+    cp /usr/share/doc/libc6/copyright /magika/glibc-copyright && \
+    python3 /tmp/strip-linux-runtime.py --debug-dir /debug /magika && \
+    python3 /tmp/check-binary-hygiene.py /magika && \
+    /magika/ld-linux-x86-64.so.2 --library-path /magika /magika/magika --version
+
 # Build with --target showcase --build-context showcase_enrichment=PATH.
-# The context is a signed, already installed enrichment snapshot.
 FROM service AS showcase
 USER root
-RUN apk add --no-cache gcompat
-ADD --checksum=sha256:4ce475c965cd20e724b5fc53e8a303a479b9d8649beef8721d05e9b3988fbab4 https://github.com/google/magika/releases/download/cli/v1.0.2/magika-x86_64-unknown-linux-gnu.tar.xz /tmp/magika.tar.xz
-RUN tar -xJOf /tmp/magika.tar.xz magika-x86_64-unknown-linux-gnu/magika > /usr/local/bin/magika && \
-    chmod 0755 /usr/local/bin/magika && magika --version && rm /tmp/magika.tar.xz
+COPY --from=showcase-magika /magika/ /opt/netcap/magika/
+COPY docker/service/magika-wrapper.sh /usr/local/bin/magika
+RUN chmod 0755 /usr/local/bin/magika && magika --version
 COPY --from=showcase_enrichment --chown=1000:1000 / /opt/netcap/enrichment/
 COPY docker/service/showcase-files.yml /opt/netcap/showcase-files.yml
 COPY docker/service/showcase.yar /opt/netcap/showcase-rules/format.yar

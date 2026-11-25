@@ -221,19 +221,11 @@ func (s *Server) resolutionOutDir(w http.ResponseWriter, r *http.Request) (strin
 		RespondJSON(w, http.StatusBadRequest, map[string]any{"error": "Either alertId or groupId must be provided"})
 		return "", nil, false
 	}
-	outDir, _ := s.resolveOutDirFromRequest(r)
-	if s.isServiceMode {
-		selected, _ := s.resolveCaptureSelection(r)
-		if session, ok := s.visibleSession(r, selected.SessionID); ok && session.IsPreloaded && !captureAdminAuthorized(r) {
-			http.Error(w, "Showcase findings are read-only", http.StatusForbidden)
-			return "", nil, false
-		}
-	}
-	if outDir == "" {
-		RespondJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "No output directory selected"})
+	selected, ok := s.writableCapture(w, r)
+	if !ok {
 		return "", nil, false
 	}
-	return outDir, &req, true
+	return selected.OutputDir, &req, true
 }
 
 func (s *Server) respondResolutionError(w http.ResponseWriter, r *http.Request, action string, err error) {

@@ -29,6 +29,12 @@ lib=binary.parent/'lib'
 lib.mkdir(exist_ok=True)
 sources=root/'dist-macos-sources'
 sources.mkdir(exist_ok=True)
+debug=root/'dist-macos-symbols'/a.variant
+debug.mkdir(parents=True,exist_ok=True)
+toolchain='1.95.0'
+sysroot=Path(subprocess.check_output(['rustc','+'+toolchain,'--print','sysroot'],text=True).strip())
+host=subprocess.check_output(['rustc','+'+toolchain,'--print','host-tuple'],text=True).strip()
+strip=sysroot/'lib/rustlib'/host/'bin/llvm-strip'
 
 def sha(path):
     with path.open('rb') as f:return hashlib.file_digest(f,'sha256').hexdigest()
@@ -113,15 +119,23 @@ while pending:
 
 for path in [binary,*set(copied.values())]:
     changes=[]
+    load_commands=subprocess.check_output(['otool','-l',str(path)],text=True)
+    for rpath in re.findall(r'cmd LC_RPATH\s+cmdsize \d+\s+path (.+?) \(offset \d+\)',load_commands):
+        if rpath.startswith('/'):
+            changes.extend(['-delete_rpath',rpath])
     for dependency in deps(path):
         if dependency.startswith(('/usr/lib/','/System/')):continue
         destination=copied[dependency]
         replacement=('@executable_path/lib/' if path==binary else '@loader_path/')+destination.name
         changes.extend(['-change',dependency,replacement])
     if changes:subprocess.run(['install_name_tool',*changes,str(path)],check=True)
-    if path!=binary:subprocess.run(['install_name_tool','-id','@loader_path/'+path.name,str(path)],check=True)
+    if path!=binary:
+        subprocess.run(['install_name_tool','-id','@loader_path/'+path.name,str(path)],check=True)
+        subprocess.run(['dsymutil',str(path),'-o',str(debug/(path.name+'.dSYM'))],capture_output=True)
+        subprocess.run([strip,'-S','-x',str(path)],check=True)
     subprocess.run(['codesign','--force','--sign','-',str(path)],check=True)
     subprocess.run(['codesign','--verify',str(path)],check=True)
+subprocess.run(['python3',str(root/'scripts/check-binary-hygiene.py'),str(binary),str(lib)],check=True)
 for record in records:
     file=lib/Path(record['file']).name
     record['sha256']=sha(file)
@@ -129,7 +143,7 @@ for record in records:
 minimum=minimum_os(binary)
 if any(tuple(map(int,r['minimumOS'].split('.')))>tuple(map(int,minimum.split('.'))) for r in records):raise ValueError('native library exceeds advertised binary minimum OS')
 (export/'inventory.json').write_text(json.dumps({'format':'netcap-macos-runtime/v1','minimumOS':minimum,'files':records},indent=2)+'\n')
-notice=['NETCAP MACOS NATIVE RUNTIME','Libraries are dynamically linked and replaceable with compatible modified versions.','Full corresponding supplier sources and Homebrew build recipes are in the macOS runtime source archive.','Native library install names were relocated by Netcap to @loader_path; no library code was modified.','']
+notice=['NETCAP MACOS NATIVE RUNTIME','Libraries are dynamically linked and replaceable with compatible modified versions.','Full corresponding supplier sources and Homebrew build recipes are in the macOS runtime source archive.','Netcap relocated native library install names and stripped local symbols.','']
 for source in sorted(source_records.values(),key=lambda s:s['package']):
     notice.append(json.dumps(source,sort_keys=True))
     archive=sources/source['archive']

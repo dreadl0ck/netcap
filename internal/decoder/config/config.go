@@ -28,6 +28,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/aggregate"
 	"github.com/dreadl0ck/netcap/internal/performance"
 	"github.com/dreadl0ck/netcap/internal/tlsdecrypt"
+	"github.com/dreadl0ck/netcap/internal/torobserve"
 	"sync"
 
 	"github.com/dreadl0ck/netcap/internal/label/manager"
@@ -117,8 +118,9 @@ var DefaultConfig = &Config{
 // for the decoders
 // this structure has an optimized field order to avoid excessive padding.
 type Config struct {
-	PacketBACnet bool `json:"-" yaml:"-"` // Standard-port BVLC is owned by the packet lane.
-	AggregateStore         *aggregate.Store `json:"-" yaml:"-"`
+	PacketBACnet           bool              `json:"-" yaml:"-"` // Standard-port BVLC is owned by the packet lane.
+	TorCertificates        *torobserve.Index `json:"-" yaml:"-"`
+	AggregateStore         *aggregate.Store  `json:"-" yaml:"-"`
 	MaxAggregateStateBytes int64
 	LinkProfilesPath       string
 	TLSSecrets             *tlsdecrypt.Secrets `json:"-" yaml:"-"`
@@ -395,6 +397,7 @@ func (c *Config) Clone() *Config {
 
 	dup := *c
 	dup.AggregateStore = nil
+	dup.TorCertificates = nil
 
 	return &dup
 }

@@ -194,14 +194,22 @@ func (s *Server) handleOfflineExecute(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	if s.isServiceMode {
+		selected, err := s.resolveBodyCapture(r, request.InputFile, request.SessionID, "")
+		if err == nil {
+			err = s.requireCaptureWrite(r, selected)
+		}
+		if err != nil {
+			writeSelectionError(w, err)
+			return
+		}
+		request.SessionID = selected.SessionID
+	}
 	pack, ok := parseOfflineRequest(r.Context(), w, request)
 	if !ok {
 		return
 	}
 	s.mu.RLock()
-	if request.SessionID == "" && s.isServiceMode {
-		request.SessionID = r.URL.Query().Get("sessionId")
-	}
 	if request.InputFile == "" && !s.isServiceMode {
 		request.InputFile = s.activeInputFile
 		if request.InputFile == "" && len(s.inputFiles) == 1 {

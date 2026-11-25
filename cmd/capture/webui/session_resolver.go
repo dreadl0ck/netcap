@@ -73,7 +73,7 @@ func (s *Server) captureSelectionMiddleware(next http.Handler) http.Handler {
 				}
 			}
 			if err == nil && explicit && partialAuditContext(r) == nil && r.Method == http.MethodGet && r.URL.Path != "/api/status" && r.URL.Path != "/api/files/input" && r.URL.Path != "/api/investigation/reproduction" && !strings.HasPrefix(r.URL.Path, "/api/error-log/") {
-				if err := s.captureReadAdmission(selection, r.URL.Path == "/api/audit-stats"); err != nil {
+				if err := s.captureReadAdmission(selection, r.URL.Path == "/api/audit-stats" || r.URL.Path == "/api/stats"); err != nil {
 					writeSelectionError(w, err)
 					return
 				}

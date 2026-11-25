@@ -32,6 +32,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/reassembly"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
 	"github.com/dreadl0ck/netcap/internal/tlsdecrypt"
+	"github.com/dreadl0ck/netcap/internal/torobserve"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -109,6 +110,7 @@ func (c *Collector) Init() (err error) {
 		c.config.DecoderConfig.TLSSecrets = tlsdecrypt.NewSecrets()
 	}
 	c.config.DecoderConfig.PerfTracker = c.perfTracker
+	c.config.DecoderConfig.TorCertificates = new(torobserve.Index)
 	packet.SetConfig(c.config.DecoderConfig)
 
 	// Wire up device enrichment callback for network discovery protocols

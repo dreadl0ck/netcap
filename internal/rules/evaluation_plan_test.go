@@ -56,6 +56,10 @@ func TestSharedEvaluationPreservesAlertProvenanceAndClockGates(t *testing.T) {
 		t.Fatal("clock-controlled gates changed", counts)
 	}
 	now = now.Add(61 * time.Second)
+	if count, err := engine.Evaluate(record); err != nil || count != 0 {
+		t.Fatal("advancing the wall clock reopened a capture-time window", count, err)
+	}
+	record.Timestamp = now.UnixNano()
 	record.Timestamp = now.UnixNano()
 	if count, err := engine.Evaluate(record); err != nil || count != 1 {
 		t.Fatal("rate window did not advance", count, err)

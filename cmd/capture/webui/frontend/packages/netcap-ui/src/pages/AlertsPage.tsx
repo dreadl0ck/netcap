@@ -388,8 +388,8 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
               variant="outlined" 
               color="error" 
               startIcon={<DeleteIcon />} 
-              onClick={handleClearAlerts}
-              disabled={totalCount === 0}
+               onClick={handleClearAlerts}
+               disabled={totalCount === 0 || status?.readOnly}
               size="small"
               sx={{ flex: { xs: 1, sm: 'none' } }}>
               {i18nText("ui:m_0cb3d73ec88de1474e7b")}
@@ -451,14 +451,14 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
                     color="primary"
                     sx={{ fontWeight: 'bold' }} />{group.resolved && (
                     <Chip label={i18nText("ui:m_6409fda6c1b6bad4d325")} size="small" variant="outlined" color="success" />
-                  )}</Box><Typography variant="body2" noWrap fontWeight="medium">{group.ruleName}</Typography><Typography variant="caption" color="text.secondary" display="block" mt={0.5}>{group.description}</Typography><Box display="flex" justifyContent="space-between" alignItems="center" mt={0.5}><Typography variant="caption" color="text.secondary">{formatTimestamp(group.firstSeen, 'nanoseconds')}</Typography>{group.resolved ? (
+                   )}</Box><Typography variant="body2" noWrap fontWeight="medium">{group.displayName || group.ruleName}</Typography><Typography variant="caption" color="text.secondary" display="block" mt={0.5}>{group.description}</Typography><Box display="flex" justifyContent="space-between" alignItems="center" mt={0.5}><Typography variant="caption" color="text.secondary">{formatTimestamp(group.firstSeen, 'nanoseconds')}</Typography>{group.resolved ? (
                     <IconButton size="small"
                       color="default"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleUnresolveGroup(group.groupId);
                       }}
-                      disabled={resolvingGroups.has(group.groupId)}><UndoIcon fontSize="small" /></IconButton>
+                       disabled={status?.readOnly || resolvingGroups.has(group.groupId)}><UndoIcon fontSize="small" /></IconButton>
                   ) : (
                     <IconButton size="small"
                       color="success"
@@ -466,7 +466,7 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
                         e.stopPropagation();
                         handleResolveGroup(group.groupId);
                       }}
-                      disabled={resolvingGroups.has(group.groupId)}><CheckIcon fontSize="small" /></IconButton>
+                       disabled={status?.readOnly || resolvingGroups.has(group.groupId)}><CheckIcon fontSize="small" /></IconButton>
                   )}</Box></CardContent></Card>
           )}
           desktopTable={<TableContainer component={Paper} sx={{ overflowX: 'auto', maxWidth: '100%' }}><Table sx={{ minWidth: { xs: 800, md: 'auto' } }}><TableHead><TableRow><TableCell width="40px"></TableCell><TableCell><TableSortLabel active={sortBy === 'severity'}
@@ -511,7 +511,7 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
                                     overflow: 'hidden',
                                     textOverflow: 'ellipsis',
                                     whiteSpace: 'nowrap'
-                                  }}>{group.ruleName}</Typography></Tooltip></TableCell><TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)} sx={{ display: { xs: 'none', xl: 'table-cell' } }}><Chip label={recordTypeLabel(group.recordType)} size="small" variant="outlined" /></TableCell><TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)}><Chip label={group.count.toLocaleString(getUILocale())}
+                                  }}>{group.displayName || group.ruleName}</Typography></Tooltip></TableCell><TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)} sx={{ display: { xs: 'none', xl: 'table-cell' } }}><Chip label={recordTypeLabel(group.recordType)} size="small" variant="outlined" /></TableCell><TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)}><Chip label={group.count.toLocaleString(getUILocale())}
                                 size="small"
                                 color="primary"
                                 sx={{ fontWeight: 'bold' }} /></TableCell><TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)}><Typography variant="body2">{formatTimestamp(group.firstSeen, 'nanoseconds')}</Typography></TableCell><TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)} sx={{ display: { xs: 'none', xl: 'table-cell' } }}><Typography variant="body2">{formatTimestamp(group.lastSeen, 'nanoseconds')}</Typography></TableCell><TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)} sx={{ display: { xs: 'none', xl: 'table-cell' } }}><Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}><Typography variant="caption" color="text.secondary">
@@ -532,7 +532,7 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
                                         e.stopPropagation();
                                         handleUnresolveGroup(group.groupId);
                                       }}
-                                      disabled={resolvingGroups.has(group.groupId)}><UndoIcon fontSize="small" /></IconButton></Tooltip>
+                                       disabled={status?.readOnly || resolvingGroups.has(group.groupId)}><UndoIcon fontSize="small" /></IconButton></Tooltip>
                                 ) : (
                                   <Tooltip title={i18nText("ui:m_3a6ca6a59b03b40a01b4")}><IconButton data-learn={i18nText("ui:m_d1637304822bf48b6b3d")}
                                       size="small"
@@ -541,7 +541,7 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
                                         e.stopPropagation();
                                         handleResolveGroup(group.groupId);
                                       }}
-                                      disabled={resolvingGroups.has(group.groupId)}><CheckIcon fontSize="small" /></IconButton></Tooltip>
+                                       disabled={status?.readOnly || resolvingGroups.has(group.groupId)}><CheckIcon fontSize="small" /></IconButton></Tooltip>
                                 )}</Box></TableCell></TableRow>{/* Expanded Details */}{isExpanded && (
                             <TableRow><TableCell colSpan={10} sx={{ backgroundColor: 'action.hover', py: 2 }}><Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, px: 2 }}><Typography variant="subtitle2" fontWeight="bold">
                                     {i18nText("ui:m_be2ebd0da19653315021")}
