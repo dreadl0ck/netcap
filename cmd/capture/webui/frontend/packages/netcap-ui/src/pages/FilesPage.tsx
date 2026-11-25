@@ -1364,7 +1364,7 @@ export default function ExtractedFilesPage() {
                                   overflow: 'hidden',
                                   textOverflow: 'ellipsis',
                                   whiteSpace: 'nowrap'
-                                }}>{truncateFileName(file.originalName || file.name)}</Typography></Tooltip></Box></TableCell><TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}><Chip label={file.mimeType || i18nText("ui:m_b1b6b391498fb13c454c")}
+                                 }}>{truncateFileName(file.originalName || file.name)}</Typography></Tooltip>{file.isComplete === false && <Chip label="Partial" title={file.completenessReason} size="small" color="warning" variant="outlined" />}</Box></TableCell><TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}><Chip label={file.mimeType || i18nText("ui:m_b1b6b391498fb13c454c")}
                             size="small"
                             variant="outlined"
                             sx={{ fontSize: '0.75rem' }} /></TableCell><TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{file.protocol && (

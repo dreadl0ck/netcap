@@ -568,6 +568,8 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 
 		metadata := file.FileMetadata{
 			Timestamp:      timestamp,
+			RangeStart:     int64(headerStart),
+			RangeEnd:       int64(pos.Offset()),
 			ConnectionUID:  h.conversation.Ident,
 			FlowDirection:  "server_to_client",
 			HTTPMethod:     method,
@@ -809,6 +811,8 @@ func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition)
 
 			metadata := file.FileMetadata{
 				Timestamp:      requestTimestamp,
+				RangeStart:     int64(headerStart),
+				RangeEnd:       int64(pos.Offset()),
 				ConnectionUID:  h.conversation.Ident,
 				FlowDirection:  "client_to_server",
 				HTTPMethod:     methodPOST,

@@ -5,6 +5,7 @@ const [, , base, version, captures] = process.argv;
 assert.match(base, /^http:\/\/127\.0\.0\.1:\d+$/);
 const rows = JSON.parse(captures);
 const [mail, smb, partial] = ['mail.pcap', 'smb.pcap', 'arp-dns-eth-icmp-ip-udp-goodhttp-gooddns.pcapng'].map(name => rows[name]);
+const neris = rows['botnet-capture-20110810-neris.pcap'];
 assert(mail?.sessionId && smb?.sessionId && partial?.sessionId);
 
 const browser = await chromium.launch({ channel: 'chrome', timeout: 25_000, args: ['--disable-background-networking'] });
@@ -31,10 +32,32 @@ try {
   await Promise.all([pageA, pageB].map(page => page.getByRole('button', { name: 'Start exploring' }).click()));
   await expect(pageA.getByRole('heading', { name: 'Cleartext email authentication' })).toBeVisible();
   await expect(pageB.getByRole('heading', { name: 'Windows file sharing in a lab' })).toBeVisible();
+  const sharedStats = `/api/alerts/stats?kind=all&sessionId=${mail.sessionId}`;
+  const before = (await (await visitorA.request.get(sharedStats)).json()).totalAlerts;
+  const denied = await visitorB.request.post(`/api/alerts/clear?sessionId=${mail.sessionId}`);
+  assert.equal(denied.status(), 403);
+  assert.equal((await (await visitorA.request.get(sharedStats)).json()).totalAlerts, before);
   await pageA.goto(`/pcaps?sessionId=${mail.sessionId}`);
   await pageA.getByRole('cell', { name: partial.name, exact: false }).first().click();
   await expect(pageA).toHaveURL(new RegExp(`sessionId=${partial.sessionId}`));
   await expect(pageA.getByRole('status').filter({ hasText: 'Partial packet coverage' })).toBeVisible();
+  await pageA.goto(`/files?sessionId=${partial.sessionId}`);
+  const artifacts = await (await visitorA.request.get(`/api/extracted-files?sessionId=${partial.sessionId}`)).json();
+  const item = artifacts.files.find(row => /^text\//.test(row.mimeType));
+  assert(item, 'expected a text preview fixture');
+  const preview = pageA.waitForResponse(response => response.url().includes('/api/extracted-files/download/') && response.url().includes(`sessionId=${partial.sessionId}`));
+  await pageA.getByRole('cell', { name: item.originalName || item.name }).first().click();
+  assert.equal((await preview).status(), 200);
+  await expect(pageA.getByRole('dialog')).toBeVisible();
+  if (neris?.sessionId) {
+    const chart = pageA.waitForResponse(response => {
+      const url = new URL(response.url());
+      return url.pathname === '/api/fingerprints/type-distribution' && url.searchParams.get('sessionId') === neris.sessionId;
+    });
+    await pageA.goto(`/fingerprints?sessionId=${neris.sessionId}`);
+    await pageA.getByRole('button', { name: /^charts?$/i }).click();
+    assert.equal((await chart).status(), 200);
+  }
   await pageB.reload();
   await expect(pageB.getByRole('heading', { name: 'Windows file sharing in a lab' })).toBeVisible();
   const noSelection = await visitorB.request.get('/api/status');
@@ -62,7 +85,7 @@ try {
   }
   assert.deepEqual(errors, []);
   assert.deepEqual(blocked, []);
-  console.log(JSON.stringify({ browser: 'two same-IP contexts: capture switching, reload and concurrent upload isolation passed' }));
+  console.log(JSON.stringify({ browser: 'same-IP contexts, read-only preloads, scoped preview/chart and concurrent upload checks passed' }));
 } finally {
   await browser.close();
 }

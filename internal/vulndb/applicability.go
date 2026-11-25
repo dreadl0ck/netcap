@@ -216,7 +216,7 @@ func matchCPE(m CPEMatch, id Identity) truth {
 	}
 	return yes
 }
-func evalNode(n Node, id Identity, depth int) (truth, bool) {
+func evalNode(n Node, id Identity, depth int, requireVersion bool) (truth, bool) {
 	if depth > 16 {
 		return unknown, false
 	}
@@ -224,13 +224,19 @@ func evalNode(n Node, id Identity, depth int) (truth, bool) {
 	affected := false
 	for _, m := range n.Matches {
 		value := matchCPE(m, id)
+		if requireVersion && m.Vulnerable && value == yes {
+			criteria, _ := splitCPE(m.Criteria)
+			if criteria[5] == "*" && m.StartIncluding == "" && m.StartExcluding == "" && m.EndIncluding == "" && m.EndExcluding == "" {
+				value = unknown
+			}
+		}
 		children = append(children, value)
 		if m.Vulnerable && value == yes {
 			affected = true
 		}
 	}
 	for _, child := range append(append([]Node(nil), n.Children...), n.Nodes...) {
-		v, a := evalNode(child, id, depth+1)
+		v, a := evalNode(child, id, depth+1, requireVersion)
 		children = append(children, v)
 		affected = affected || a
 	}
@@ -241,11 +247,15 @@ func evalNode(n Node, id Identity, depth int) (truth, bool) {
 	return result, affected
 }
 func applicable(configs []Configuration, id Identity) bool {
+	return applicableWithEvidence(configs, id, false)
+}
+
+func applicableWithEvidence(configs []Configuration, id Identity, requireVersion bool) bool {
 	for _, c := range configs {
 		var children []truth
 		affected := false
 		for _, n := range c.Nodes {
-			v, a := evalNode(n, id, 0)
+			v, a := evalNode(n, id, 0, requireVersion)
 			children = append(children, v)
 			affected = affected || a
 		}
@@ -296,6 +306,16 @@ func configurationProducts(configs []Configuration) []Identity {
 }
 
 func (d *DB) Vulnerabilities(vendor, product, version string) ([]Vulnerability, error) {
+	return d.vulnerabilities(vendor, product, version, false)
+}
+
+// VersionedVulnerabilities uses explicit version evidence for passive findings.
+// Product-only wildcard matches remain available to the ordinary lookup.
+func (d *DB) VersionedVulnerabilities(vendor, product, version string) ([]Vulnerability, error) {
+	return d.vulnerabilities(vendor, product, version, true)
+}
+
+func (d *DB) vulnerabilities(vendor, product, version string, requireVersion bool) ([]Vulnerability, error) {
 	id, ok := canonicalIdentity(vendor, product, version)
 	if !ok {
 		return nil, nil
@@ -315,7 +335,7 @@ func (d *DB) Vulnerabilities(vendor, product, version string) ([]Vulnerability, 
 		if err := json.Unmarshal([]byte(raw), &v.Configurations); err != nil {
 			return nil, fmt.Errorf("invalid stored applicability: %w", err)
 		}
-		if applicable(v.Configurations, id) {
+		if applicableWithEvidence(v.Configurations, id, requireVersion) {
 			v.MatchStatus = "cpe-product-version"
 			result = append(result, v)
 			if len(result) == MaxHits {

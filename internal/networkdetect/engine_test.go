@@ -14,9 +14,10 @@ import (
 )
 
 type fixtureCase struct {
-	Name     string   `json:"name"`
-	Events   []Event  `json:"events"`
-	Expected []string `json:"expected"`
+	Name             string    `json:"name"`
+	Events           []Event   `json:"events"`
+	Expected         []string  `json:"expected"`
+	CapturedExpected *[]string `json:"capturedExpected,omitempty"`
 }
 type fixtureCorpus struct {
 	Contract int           `json:"contract"`
@@ -40,7 +41,7 @@ func corpus() fixtureCorpus {
 		ev := baseEvent("dns", 0)
 		ev.Name = category + ".example"
 		ev.QType = 1
-		result.Cases = append(result.Cases, fixtureCase{category, []Event{ev}, []string{"intel." + category}})
+		result.Cases = append(result.Cases, fixtureCase{category, []Event{ev}, []string{"intel." + category}, nil})
 	}
 	var dga, tunnel, scan, smtp, icmp []Event
 	for n := 0; n < 10; n++ {
@@ -67,7 +68,9 @@ func corpus() fixtureCorpus {
 		}
 		icmp = append(icmp, ev)
 	}
-	result.Cases = append(result.Cases, fixtureCase{"dga", dga, []string{"dns.dga"}}, fixtureCase{"tunnel-dns", tunnel, []string{"dns.tunnel"}}, fixtureCase{"scan", scan, []string{"network.scan"}}, fixtureCase{"spambot", smtp, []string{"smtp.fanout", "network.scan"}}, fixtureCase{"tunnel-icmp", icmp, []string{"icmp.tunnel"}})
+	// Historical captures contain a query-only DGA burst and unclassified cleartext payload.
+	noCapturedAlerts := &[]string{}
+	result.Cases = append(result.Cases, fixtureCase{"dga", dga, []string{"dns.dga"}, noCapturedAlerts}, fixtureCase{"tunnel-dns", tunnel, []string{"dns.tunnel"}, nil}, fixtureCase{"scan", scan, []string{"network.scan"}, nil}, fixtureCase{"spambot", smtp, []string{"smtp.fanout", "network.scan"}, nil}, fixtureCase{"tunnel-icmp", icmp, []string{"icmp.tunnel"}, nil})
 	for _, tc := range []struct {
 		name, payload, detector string
 		port                    uint16
@@ -80,7 +83,11 @@ func corpus() fixtureCorpus {
 		ev.Kind = "data"
 		ev.Seq = 100
 		ev.Payload = []byte(tc.payload)
-		result.Cases = append(result.Cases, fixtureCase{tc.name, []Event{syn, ev}, []string{tc.detector}})
+		fixture := fixtureCase{Name: tc.name, Events: []Event{syn, ev}, Expected: []string{tc.detector}}
+		if tc.name == "cleartext" {
+			fixture.CapturedExpected = noCapturedAlerts
+		}
+		result.Cases = append(result.Cases, fixture)
 	}
 	for _, port := range []uint16{22, 443} {
 		syn := baseEvent("syn", 0)
@@ -101,13 +108,13 @@ func corpus() fixtureCorpus {
 			name = "ssh-exfil"
 			expected = []string{"ssh.nonstandard-port", "ssh.large-upload"}
 		}
-		result.Cases = append(result.Cases, fixtureCase{name, []Event{syn, banner, data}, expected})
+		result.Cases = append(result.Cases, fixtureCase{name, []Event{syn, banner, data}, expected, nil})
 	}
 	for _, tc := range []struct{ name, domain, detector string }{{"oast", "random.oast.pro", "policy.oast"}, {"telegram-bot", "api.telegram.org", "policy.telegram-api"}} {
 		ev := baseEvent("dns", 0)
 		ev.Name = tc.domain
 		ev.QType = 1
-		result.Cases = append(result.Cases, fixtureCase{tc.name, []Event{ev}, []string{tc.detector}})
+		result.Cases = append(result.Cases, fixtureCase{tc.name, []Event{ev}, []string{tc.detector}, nil})
 	}
 	// Ten connection starts 60 s apart with up to 2 s of jitter.
 	var periodic []Event
@@ -118,7 +125,7 @@ func corpus() fixtureCorpus {
 		ev.DstIP, ev.DstPort, ev.SrcPort, ev.Seq = "198.51.100.20", 8443, uint16(41000+n), uint32(1000+n)
 		periodic = append(periodic, ev)
 	}
-	result.Cases = append(result.Cases, fixtureCase{"beacon", periodic, []string{"c2.beacon"}})
+	result.Cases = append(result.Cases, fixtureCase{"beacon", periodic, []string{"c2.beacon"}, nil})
 	var benign []Event
 	for n := 0; n < 15; n++ {
 		ev := baseEvent("dns", n)
@@ -149,7 +156,7 @@ func corpus() fixtureCorpus {
 		irregular.At, irregular.DstIP, irregular.DstPort, irregular.SrcPort, irregular.Seq = at, "198.51.100.21", 8443, uint16(42000+n), uint32(2000+n)
 		benign = append(benign, irregular)
 	}
-	result.Cases = append(result.Cases, fixtureCase{"benign", benign, []string{}})
+	result.Cases = append(result.Cases, fixtureCase{"benign", benign, []string{}, nil})
 	return result
 }
 

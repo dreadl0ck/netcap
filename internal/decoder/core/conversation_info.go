@@ -24,14 +24,15 @@ import "time"
 // ConversationInfo is wrapper structure for traffic sent over a Transport protocol
 // to allow Transport agnostic decoding of data streams.
 type ConversationInfo struct {
-	TLSDecrypted bool
-	Transport    TransportProtocol
-	Data         DataFragments
-	Source       FragmentSource
-	ClientSource RangedFragmentSource
-	ServerSource RangedFragmentSource
-	LoadData     func() error `json:"-"`
-	StateBudget  *StateBudget `json:"-"`
+	ArtifactRangeStart, ArtifactRangeEnd int64 // Observed directional wire span; zero length means unavailable.
+	TLSDecrypted                         bool
+	Transport                            TransportProtocol
+	Data                                 DataFragments
+	Source                               FragmentSource
+	ClientSource                         RangedFragmentSource
+	ServerSource                         RangedFragmentSource
+	LoadData                             func() error `json:"-"`
+	StateBudget                          *StateBudget `json:"-"`
 	// Owned by the decoder goroutine; source failures also fail its capture.
 	FragmentError error
 	// TCP directions in reassembly order; capture timestamps can run backwards.

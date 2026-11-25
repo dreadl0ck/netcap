@@ -79,3 +79,32 @@ func (s *Server) preloadedSelection(r *http.Request) bool {
 	session, ok := s.visibleSession(r, selection.SessionID)
 	return ok && session.IsPreloaded && session.Status == StatusCompleted
 }
+
+func (s *Server) requireCaptureWrite(r *http.Request, selected captureSelection) error {
+	if !s.isServiceMode {
+		return nil
+	}
+	session, ok := s.visibleSession(r, selected.SessionID)
+	if !ok || session.OutputDir != selected.OutputDir {
+		return selectionError(http.StatusNotFound, "Capture selection is unavailable")
+	}
+	if session.IsPreloaded && !captureAdminAuthorized(r) {
+		return selectionError(http.StatusForbidden, "Showcase findings are read-only")
+	}
+	if session.Status != StatusCompleted {
+		return selectionError(http.StatusConflict, "Analysis is not ready")
+	}
+	return nil
+}
+
+func (s *Server) writableCapture(w http.ResponseWriter, r *http.Request) (captureSelection, bool) {
+	selected, ok := s.selectedCapture(w, r)
+	if !ok {
+		return captureSelection{}, false
+	}
+	if err := s.requireCaptureWrite(r, selected); err != nil {
+		writeSelectionError(w, err)
+		return captureSelection{}, false
+	}
+	return selected, true
+}

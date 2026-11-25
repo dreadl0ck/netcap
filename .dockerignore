@@ -89,6 +89,11 @@ configs/
 !go.mod
 !go.sum
 
+# Files copied by the optional showcase runtime stage.
+!docker/service/showcase-files.yml
+!docker/service/showcase.yar
+!docker/service/magika-wrapper.sh
+
 # Keys and secrets
 priv.key
 pub.key

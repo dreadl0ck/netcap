@@ -30,6 +30,7 @@ Different programs can share a fingerprint, and one program can change its finge
 | Data                           | Availability                                                                                      |
 | ------------------------------ | ------------------------------------------------------------------------------------------------- |
 | JA4 client fingerprint (`Ja4`) | Official builds                                                                                   |
+| JA3/JA3S (`Ja3`, `Ja3S`)       | TLS ClientHello and ServerHello records in official builds; legacy wire-order identifiers         |
 | JA4+ (JA4S, JA4T and others)   | Source builds with the `ja4plus` tag, under separate terms                                        |
 | QUIC Initial ClientHello       | Recognised Initial packets only                                                                   |
 | TLS plaintext                  | The separate `investigate tls-capture` workflow, with your session secrets and `tshark` installed |

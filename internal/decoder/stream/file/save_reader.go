@@ -82,6 +82,8 @@ func SaveSpoolEnhanced(conv *core.ConversationInfo, source, name string, bodyErr
 	return savePreparedFile(conv, source, name, bodyErr, info, current.content, hashErr, host, contentType, depth, parentID, direction, protocol)
 }
 
+var errUnsupportedContentEncoding = errors.New("unsupported content encoding")
+
 func reserveCodecWorkspace(kind string) (func(), error) {
 	var lease int64
 	switch kind {
@@ -92,7 +94,7 @@ func reserveCodecWorkspace(kind string) (func(), error) {
 	case "br":
 		lease = 32 << 20
 	default:
-		return nil, fmt.Errorf("unsupported content encoding %q", kind)
+		return nil, fmt.Errorf("%w %q", errUnsupportedContentEncoding, kind)
 	}
 	if err := reserveBuffer(lease); err != nil {
 		return nil, err

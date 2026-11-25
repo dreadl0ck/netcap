@@ -20,6 +20,7 @@
 package webui
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/go-echarts/go-echarts/v2/charts"
@@ -33,10 +34,8 @@ func (s *Server) handleFingerprintsTypeDistribution(w http.ResponseWriter, r *ht
 		return
 	}
 
-	outDir, _ := s.resolveOutDirFromRequest(r)
-
-	if outDir == "" {
-		http.Error(w, "No output directory set", http.StatusServiceUnavailable)
+	snapshot, ok := s.fingerprintChartSnapshot(w, r)
+	if !ok {
 		return
 	}
 
@@ -44,7 +43,7 @@ func (s *Server) handleFingerprintsTypeDistribution(w http.ResponseWriter, r *ht
 	showLegendStr := r.URL.Query().Get("showLegend")
 	showLegend := showLegendStr != "false"
 
-	chart := generateFingerprintsTypeDistributionChart(outDir, showLegend)
+	chart := generateFingerprintsTypeDistributionChart(snapshot.rows, showLegend)
 	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
@@ -62,10 +61,8 @@ func (s *Server) handleFingerprintsTopJA4(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	outDir, _ := s.resolveOutDirFromRequest(r)
-
-	if outDir == "" {
-		http.Error(w, "No output directory set", http.StatusServiceUnavailable)
+	snapshot, ok := s.fingerprintChartSnapshot(w, r)
+	if !ok {
 		return
 	}
 
@@ -73,7 +70,7 @@ func (s *Server) handleFingerprintsTopJA4(w http.ResponseWriter, r *http.Request
 	showLegendStr := r.URL.Query().Get("showLegend")
 	showLegend := showLegendStr == "true"
 
-	chart := generateFingerprintsTopJA4Chart(outDir, showLegend)
+	chart := generateFingerprintsTopJA4Chart(snapshot.rows, showLegend)
 	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
@@ -91,10 +88,8 @@ func (s *Server) handleFingerprintsTopJA4SSH(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	outDir, _ := s.resolveOutDirFromRequest(r)
-
-	if outDir == "" {
-		http.Error(w, "No output directory set", http.StatusServiceUnavailable)
+	snapshot, ok := s.fingerprintChartSnapshot(w, r)
+	if !ok {
 		return
 	}
 
@@ -102,7 +97,7 @@ func (s *Server) handleFingerprintsTopJA4SSH(w http.ResponseWriter, r *http.Requ
 	showLegendStr := r.URL.Query().Get("showLegend")
 	showLegend := showLegendStr == "true"
 
-	chart := generateFingerprintsTopJA4SSHChart(outDir, showLegend)
+	chart := generateFingerprintsTopJA4SSHChart(snapshot.rows, showLegend)
 	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
@@ -120,10 +115,8 @@ func (s *Server) handleFingerprintsHostsPerFingerprint(w http.ResponseWriter, r 
 		return
 	}
 
-	outDir, _ := s.resolveOutDirFromRequest(r)
-
-	if outDir == "" {
-		http.Error(w, "No output directory set", http.StatusServiceUnavailable)
+	snapshot, ok := s.fingerprintChartSnapshot(w, r)
+	if !ok {
 		return
 	}
 
@@ -131,7 +124,7 @@ func (s *Server) handleFingerprintsHostsPerFingerprint(w http.ResponseWriter, r 
 	showLegendStr := r.URL.Query().Get("showLegend")
 	showLegend := showLegendStr == "true"
 
-	chart := generateFingerprintsHostsPerFingerprintChart(outDir, showLegend)
+	chart := generateFingerprintsHostsPerFingerprintChart(snapshot.rows, showLegend)
 	html, err := injectFullHeightCSSForRequest(chart.Render, r)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
@@ -143,8 +136,7 @@ func (s *Server) handleFingerprintsHostsPerFingerprint(w http.ResponseWriter, r 
 }
 
 // generateFingerprintsTypeDistributionChart creates a pie chart showing fingerprint type distribution
-func generateFingerprintsTypeDistributionChart(outDir string, showLegend bool) *charts.Pie {
-	fingerprints := cachedFingerprintRows(outDir)
+func generateFingerprintsTypeDistributionChart(fingerprints []FingerprintSummary, showLegend bool) *charts.Pie {
 
 	// Aggregate by type
 	typeCount := make(map[string]int)
@@ -203,8 +195,7 @@ func generateFingerprintsTypeDistributionChart(outDir string, showLegend bool) *
 }
 
 // generateFingerprintsTopJA4Chart creates a bar chart showing top JA4 fingerprints
-func generateFingerprintsTopJA4Chart(outDir string, showLegend bool) *charts.Bar {
-	fingerprints := cachedFingerprintRows(outDir)
+func generateFingerprintsTopJA4Chart(fingerprints []FingerprintSummary, showLegend bool) *charts.Bar {
 
 	// Filter JA4 fingerprints
 	ja4Fingerprints := make([]FingerprintSummary, 0)
@@ -289,8 +280,7 @@ func generateFingerprintsTopJA4Chart(outDir string, showLegend bool) *charts.Bar
 }
 
 // generateFingerprintsTopJA4SSHChart creates a bar chart showing top JA4SSH fingerprints
-func generateFingerprintsTopJA4SSHChart(outDir string, showLegend bool) *charts.Bar {
-	fingerprints := cachedFingerprintRows(outDir)
+func generateFingerprintsTopJA4SSHChart(fingerprints []FingerprintSummary, showLegend bool) *charts.Bar {
 
 	// Filter JA4SSH fingerprints
 	ja4sshFingerprints := make([]FingerprintSummary, 0)
@@ -375,8 +365,7 @@ func generateFingerprintsTopJA4SSHChart(outDir string, showLegend bool) *charts.
 }
 
 // generateFingerprintsHostsPerFingerprintChart creates a scatter chart showing hosts per fingerprint
-func generateFingerprintsHostsPerFingerprintChart(outDir string, showLegend bool) *charts.Scatter {
-	fingerprints := cachedFingerprintRows(outDir)
+func generateFingerprintsHostsPerFingerprintChart(fingerprints []FingerprintSummary, showLegend bool) *charts.Scatter {
 
 	// Prepare scatter data: [occurrence count, unique hosts]
 	scatterData := make([]opts.ScatterData, 0, len(fingerprints))
@@ -435,4 +424,29 @@ func generateFingerprintsHostsPerFingerprintChart(outDir string, showLegend bool
 		)
 
 	return scatter
+}
+
+func (s *Server) fingerprintChartSnapshot(w http.ResponseWriter, r *http.Request) (*fingerprintSnapshot, bool) {
+	selected, ok := s.selectedCapture(w, r)
+	if !ok {
+		return nil, false
+	}
+	snapshot, err := fingerprintSnapshotWithPolicy(r.Context(), selected.OutputDir, s.preloadedSelection(r))
+	if err != nil {
+		code := http.StatusInternalServerError
+		switch {
+		case errors.Is(err, errFingerprintBuildBusy):
+			code = http.StatusTooManyRequests
+		case errors.Is(err, errFingerprintAuditChanged):
+			code = http.StatusConflict
+		case errors.Is(err, errInventoryAuditLimit):
+			code = http.StatusRequestEntityTooLarge
+		}
+		http.Error(w, "Fingerprint chart inventory unavailable", code)
+		return nil, false
+	}
+	if snapshot.partial {
+		w.Header().Set("X-Netcap-Coverage", "partial")
+	}
+	return snapshot, true
 }

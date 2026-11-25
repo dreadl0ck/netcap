@@ -283,7 +283,8 @@ export default function ConnectionsPage({ rowActions }: ConnectionsPageProps = {
 
   // Apply filters and sorting
   const filteredConnections = useMemo(() => {
-    let filtered = connections;
+    // Keep link-only observations in Records and in the explicit network view.
+    let filtered = layerFilter === 'network' ? connections : connections.filter(c => c.srcIP || c.dstIP);
 
     // Apply Community ID filter first (if active)
     if (isCommunityIDFilterActive && selectedCommunityIDs.size > 0) {

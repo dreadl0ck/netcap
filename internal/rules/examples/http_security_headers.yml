@@ -206,7 +206,7 @@ rules:
     description: Detect cookies without SameSite attribute (CSRF risk)
     type: HTTP
     expression: (ResponseHeader["Set-Cookie"] != "" && !MatchesPattern(ResponseHeader["Set-Cookie"], "(?i)SameSite")) && IsPrivateIP(DstIP)
-    severity: low
+    severity: info
     tags: ["security-headers", "cookies", "csrf", "misconfiguration"]
     enabled: true
 
@@ -303,4 +303,3 @@ rules:
     severity: info
     tags: ["security-policy", "positive", "disclosure"]
     enabled: false  # Informational only
-

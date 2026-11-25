@@ -55,9 +55,12 @@ func (h *HTTPFileExtractor) extractSpool(conv *core.ConversationInfo, body *file
 }
 
 func (h *HTTPFileExtractor) extractArtifact(conv *core.ConversationInfo, data []byte, body *file.BodySpool, metadata file.FileMetadata, bodyErr error) error {
-	if metadata.Timestamp != 0 {
+	if metadata.Timestamp != 0 || metadata.RangeEnd > metadata.RangeStart {
 		copy := *conv
-		copy.FirstClientPacket = time.Unix(0, metadata.Timestamp)
+		if metadata.Timestamp != 0 {
+			copy.FirstClientPacket = time.Unix(0, metadata.Timestamp)
+		}
+		copy.ArtifactRangeStart, copy.ArtifactRangeEnd = metadata.RangeStart, metadata.RangeEnd
 		conv = &copy
 	}
 	// Check if HTTP file extraction is enabled

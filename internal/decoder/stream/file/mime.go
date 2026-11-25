@@ -78,6 +78,9 @@ func DetectContentType(data []byte) (string, bool) {
 	if len(data) == 0 {
 		return "application/octet-stream", false
 	}
+	if typ := containerMagic(data); typ != "" {
+		return typ, true
+	}
 
 	// Try magic number detection first (more accurate)
 	for _, sig := range signatures {
@@ -90,15 +93,8 @@ func DetectContentType(data []byte) (string, bool) {
 
 	// Check for text patterns
 	if isTextContent(data) {
-		// Check for HTML
-		if bytes.Contains(data[:min(512, len(data))], []byte("<html")) ||
-			bytes.Contains(data[:min(512, len(data))], []byte("<!DOCTYPE")) {
-			return "text/html", true
-		}
-
-		// Check for XML
-		if bytes.HasPrefix(data, []byte("<?xml")) {
-			return "text/xml", true
+		if typ := markupType(data); typ != "" {
+			return typ, true
 		}
 
 		// Check for JSON

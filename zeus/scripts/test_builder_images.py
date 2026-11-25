@@ -15,6 +15,11 @@ SPEC.loader.exec_module(BUILDER)
 
 
 class BuilderPublicationTests(unittest.TestCase):
+    def test_vendored_hygiene_gate_matches_common(self):
+        common = ROOT.parent / "common/release/check-binary-hygiene.py"
+        if common.is_file():
+            self.assertEqual((ROOT / "scripts/check-binary-hygiene.py").read_bytes(), common.read_bytes())
+
     def test_every_builder_rejects_incompatible_platforms(self):
         for variant in ('alpine', 'alpine-dpi', 'ubuntu', 'ubuntu-dpi'):
             for platform in ('linux/arm64', 'windows/amd64', 'linux/amd64,linux/arm64'):

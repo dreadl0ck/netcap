@@ -3,6 +3,8 @@ coverage.out
 dist-linux
 dist-license-sources
 /dist-macos-runtime/
+/dist-macos-symbols/
+/dist-linux-symbols/
 /dist-macos-sources/
 /.native/
 /.qualification/

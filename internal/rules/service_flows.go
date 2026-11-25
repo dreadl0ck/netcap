@@ -8,7 +8,7 @@ import (
 )
 
 const packetServiceGate = " && ACK && PayloadSize > 0"
-const flowServiceGate = ` && TransportProto == "TCP" && (Established || (PacketsClientToServer > 0 && PacketsServerToClient > 0 && (AppPayloadSize64 > 0 || AppPayloadSize > 0)))`
+const flowServiceGate = ` && TransportProto == "TCP" && (TCPInitiatorObserved || CounterSemantics == "") && (Established || (PacketsClientToServer > 0 && PacketsServerToClient > 0 && (AppPayloadSize64 > 0 || AppPayloadSize > 0)))`
 const initiatedServiceGate = "TCPInitiatorObserved && Established && "
 
 var (
