@@ -168,6 +168,12 @@ func (c *Collector) doCleanup(force bool) {
 		}
 		c.captureEvidenceError = errors.Join(c.captureEvidenceError, tcp.IncrementalError())
 	}
+	if c.industrial != nil {
+		for _, e := range c.industrial.expire(0, true) {
+			c.captureEvidenceError = errors.Join(c.captureEvidenceError, c.industrial.write(e))
+		}
+		c.industrial = nil
+	}
 	if c.streamStateBudget != nil {
 		c.captureEvidenceError = errors.Join(c.captureEvidenceError, c.streamStateBudget.Error())
 		health := c.streamStateBudget.Health()

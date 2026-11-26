@@ -53,6 +53,7 @@ type workerControl struct {
 }
 
 type packetWork struct {
+	industrial []industrialEvent
 	gopacket.Packet
 	views        packetview.Result
 	linkEvidence bool
@@ -116,6 +117,11 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 			var opaque gopacket.Packet
 			auditLink := false
 			if work, ok := pkt.(*packetWork); ok {
+				for _, e := range work.industrial {
+					if err := c.industrial.write(e); err != nil {
+						_ = c.logPacketError(work.Packet, err.Error())
+					}
+				}
 				auditLink = work.linkEvidence
 				original, logical = work.Packet, work.views.Packet
 				views = work.views.Evidence

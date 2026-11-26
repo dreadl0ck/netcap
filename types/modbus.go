@@ -63,6 +63,7 @@ var fieldsModbus = []string{
 	"AndMask", "OrMask", "CorrelationStatus", "RequestTimestamp", "ResponseLatency",
 	"DeviceIDObjectID", "DeviceIDConformityLevel", "DeviceIDMoreFollows", "DeviceIDNextObjectID",
 	"HasMBAP", "HasChecksum", "ChecksumValid", "Broadcast", "LostBytes",
+	"FunctionName", "ExceptionName", "EventCount", "MessageCount", "StatusWord", "DeviceIdentity",
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -101,6 +102,7 @@ func (a *Modbus) csvRecord() []string {
 		formatUint32(a.DeviceIDObjectID), formatUint32(a.DeviceIDConformityLevel), strconv.FormatBool(a.DeviceIDMoreFollows), formatUint32(a.DeviceIDNextObjectID),
 		strconv.FormatBool(a.HasMBAP), strconv.FormatBool(a.HasChecksum), strconv.FormatBool(a.ChecksumValid), strconv.FormatBool(a.Broadcast),
 		strconv.FormatInt(a.LostBytes, 10),
+		a.FunctionName, a.ExceptionName, formatUint32(a.EventCount), formatUint32(a.MessageCount), formatUint32(a.StatusWord), modbusJSONCell(a.DeviceIdentity),
 	}
 }
 
@@ -259,6 +261,18 @@ func (a *Modbus) Encode() []string {
 			value = modbusEncoder.Int64(field, a.ResponseLatency)
 		case "LostBytes":
 			value = modbusEncoder.Int64(field, a.LostBytes)
+		case "FunctionName":
+			value = modbusEncoder.String(field, a.FunctionName)
+		case "ExceptionName":
+			value = modbusEncoder.String(field, a.ExceptionName)
+		case "EventCount":
+			value = modbusEncoder.Uint32(field, a.EventCount)
+		case "MessageCount":
+			value = modbusEncoder.Uint32(field, a.MessageCount)
+		case "StatusWord":
+			value = modbusEncoder.Uint32(field, a.StatusWord)
+		case "DeviceIdentity":
+			value = modbusEncoder.Uint32(field, crc32.ChecksumIEEE([]byte(modbusJSONCell(a.DeviceIdentity)))&0xffff)
 		case "DeviceIDObjectID":
 			value = modbusEncoder.Uint32(field, a.DeviceIDObjectID)
 		case "DeviceIDConformityLevel":

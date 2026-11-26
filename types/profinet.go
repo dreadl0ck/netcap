@@ -119,6 +119,7 @@ var fieldsPROFINET = []string{
 	fieldPROFINETIsCriticalOperation,
 	fieldPROFINETIsAlarm,
 	fieldPROFINETIsDiagnostic,
+	"Assembly", "Context",
 	"CommunityID",
 }
 
@@ -129,7 +130,11 @@ func (p *PROFINET) CSVHeader() []string {
 
 // CSVRecord returns the CSV record for the audit record.
 func (p *PROFINET) CSVRecord() []string {
-	return filter([]string{
+	return filter(p.csvValues())
+}
+
+func (p *PROFINET) csvValues() []string {
+	return []string{
 		formatTimestamp(p.Timestamp),
 		p.SrcIP,
 		p.DstIP,
@@ -176,8 +181,9 @@ func (p *PROFINET) CSVRecord() []string {
 		strconv.FormatBool(p.IsCriticalOperation),
 		strconv.FormatBool(p.IsAlarm),
 		strconv.FormatBool(p.IsDiagnostic),
+		dnp3JSONCell(p.Assembly), dnp3JSONCell(p.Context),
 		p.CommunityID,
-	})
+	}
 }
 
 // Time returns the timestamp associated with the audit record.
@@ -188,9 +194,9 @@ func (p *PROFINET) Time() int64 {
 // JSON returns the JSON representation of the audit record.
 func (p *PROFINET) JSON() (string, error) {
 	// convert unix timestamp from nano to millisecond precision for elastic
-	p.Timestamp /= int64(time.Millisecond)
-
-	return jsonMarshaler.MarshalToString(p)
+	v := *p
+	v.Timestamp /= int64(time.Millisecond)
+	return jsonMarshaler.MarshalToString(&v)
 }
 
 var profinetMetric = prometheus.NewCounterVec(
@@ -198,12 +204,12 @@ var profinetMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_PROFINET.String()),
 		Help: Type_NC_PROFINET.String() + " audit records",
 	},
-	fieldsPROFINET[1:],
+	legacyOTLabels(fieldsPROFINET, 2),
 )
 
 // Inc increments the metrics for the audit record.
 func (p *PROFINET) Inc() {
-	profinetMetric.WithLabelValues(p.CSVRecord()[1:]...).Inc()
+	profinetMetric.WithLabelValues(legacyOTLabels(p.csvValues(), 2)...).Inc()
 }
 
 // SetPacketContext sets the associated packet context for the audit record.
@@ -216,11 +222,17 @@ func (p *PROFINET) SetPacketContext(ctx *PacketContext) {
 
 // Src returns the source address of the audit record.
 func (p *PROFINET) Src() string {
+	if p.SrcIP == "" {
+		return p.Context.GetSrcMAC()
+	}
 	return p.SrcIP
 }
 
 // Dst returns the destination address of the audit record.
 func (p *PROFINET) Dst() string {
+	if p.DstIP == "" {
+		return p.Context.GetDstMAC()
+	}
 	return p.DstIP
 }
 
@@ -275,6 +287,7 @@ func (p *PROFINET) Encode() []string {
 		profinetEncoder.Bool(p.IsCriticalOperation),
 		profinetEncoder.Bool(p.IsAlarm),
 		profinetEncoder.Bool(p.IsDiagnostic),
+		profinetEncoder.String("Assembly", p.Assembly.GetStatus()), profinetEncoder.String("Context", p.Context.GetNetworkScope()),
 		profinetEncoder.String("CommunityID", p.CommunityID),
 	})
 }

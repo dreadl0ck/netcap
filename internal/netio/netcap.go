@@ -37,6 +37,22 @@ func InitRecord(typ types.Type) (record proto.Message) {
 	switch typ {
 	case types.Type_NC_Ethernet:
 		record = new(types.Ethernet)
+	case types.Type_NC_PTPv2:
+		record = new(types.PTPv2)
+	case types.Type_NC_GOOSE:
+		record = new(types.GOOSE)
+	case types.Type_NC_SampledValues:
+		record = new(types.SampledValues)
+	case types.Type_NC_EtherCAT:
+		record = new(types.EtherCAT)
+	case types.Type_NC_OPCUAPubSub:
+		record = new(types.OPCUAPubSub)
+	case types.Type_NC_IEC104:
+		record = new(types.IEC104)
+	case types.Type_NC_MMS:
+		record = new(types.MMS)
+	case types.Type_NC_AMS:
+		record = new(types.AMS)
 	case types.Type_NC_ARP:
 		record = new(types.ARP)
 	case types.Type_NC_IPv4:

@@ -15,7 +15,8 @@
     "file": "mmsX.pcap",
     "sha256": "f77be0d74532d93937db2380984816747b28ccba43e5cf85814c2f8ccccf4c9d",
     "url": "https://raw.githubusercontent.com/zeek/zeek/5862ccc5e13e6127cda5932a7f18aaf070c8b63b/testing/btest/Traces/mmsX.pcap",
-    "issues": ["D2-6", "DS-10"], "absent": ["RDP", "S7Comm"]
+    "issues": ["D2-6", "DS-10"], "absent": ["MMS", "RDP", "S7Comm"],
+    "disposition": "The five-packet capture ends at COTP setup. No MMS PDU is present. The positive MMS replay uses gopacket's iec61850_mms.pcap."
   },
   {
     "file": "rdp-invalid-length.pcap",

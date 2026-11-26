@@ -82,7 +82,7 @@ func (h *tlsReader) Decode() {
 		zap.Int("serverPort", int(h.conversation.ServerPort)),
 	)
 
-	if Decoder.Writer == nil && RecordDecoder.Writer == nil && !helloEnabled() {
+	if Decoder.Writer == nil && RecordDecoder.Writer == nil && !helloEnabled() && !scEnabled() {
 		return
 	}
 	h.frameConversation()

@@ -1,0 +1,21 @@
+<MaltegoEntity id="netcap.GTPv1UAuditRecords" displayName="GTPv1UAuditRecords" displayNamePlural="GTPv1UAuditRecords" description="An archive of GTPv1U audit records" category="Netcap Archives" smallIconResource="netcap/insert_drive_file_olivedrab" largeIconResource="netcap/insert_drive_file_olivedrab" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.gtpv1uauditrecords" displayValue="properties.gtpv1uauditrecords">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.gtpv1uauditrecords" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="GTPv1UAuditRecords">
+    <SampleValue>-</SampleValue>
+   </Field>
+   <Field name="path" type="string" nullable="true" hidden="false" readonly="false" description="path to the audit records on disk" displayName="Path">
+    <SampleValue></SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+ <Converter>
+  <Value>^(.+(\/|\\)(GTP)\.ncap(\.gz)?)$</Value>
+  <RegexGroups>
+   <RegexGroup property="path"></RegexGroup>
+   <RegexGroup property=""></RegexGroup>
+   <RegexGroup property="properties.gtpv1uauditrecords"></RegexGroup>
+  </RegexGroups>
+ </Converter>
+</MaltegoEntity>

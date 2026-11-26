@@ -39,12 +39,19 @@ func TestW76VoIPProcess(t *testing.T) {
 	dc := config.DefaultConfig.Clone()
 	dc.Out, dc.Source, dc.Quiet = os.Getenv("W76_OUT"), input, true
 	dc.IncludeDecoders = os.Getenv("W76_INCLUDE")
+	if os.Getenv("NETCAP_TEST_MIDSTREAM") == "1" {
+		dc.AllowMissingInit, dc.WriteIncomplete = true, true
+	}
 	dc.Proto, dc.Compression, dc.IncludePayloads = true, false, false
 	dc.NumStreamWorkers = workers
-	c := New(Config{Workers: workers, PacketBufferSize: 8, ReassembleConnections: true,
+	c := New(Config{Workers: workers, PacketBufferSize: 8, ReassembleConnections: os.Getenv("W76_PACKET_ONLY") != "1",
 		NoSignalHandling: true, NoPrompt: true, BaseLayer: layers.LayerTypeEthernet,
 		DecodeOptions: gopacket.Default, DecoderConfig: dc, OutDirPermission: 0700})
-	if err := c.CollectPcap(input); err != nil {
+	collect := c.CollectPcap
+	if isPCAPNG(t, input) {
+		collect = c.CollectPcapNG
+	}
+	if err := collect(input); err != nil {
 		t.Fatal(err)
 	}
 }

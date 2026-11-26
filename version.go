@@ -8,7 +8,7 @@ var Version = "v0.16.16"
 var Commit = "90995f217032d1913701a978619e58cb95266dca"
 
 // GopacketVersion is the version of gopacket library used.
-var GopacketVersion = "v1.7.7+v1.1.16-0.20261108153543-61002f918d93"
+var GopacketVersion = "v1.8.0+v1.1.16-0.20261124230652-18ed914b14fe"
 
 // BuildIdentity is set with -X by packaged helper builds to
 // BuildIdentityFor(Version, Commit). It survives -trimpath, which drops the

@@ -89,6 +89,7 @@ var fieldsOPCUA = []string{
 	fieldOPCUAAuthenticationToken,
 	fieldOPCUAIsSecurityRelevant,
 	fieldOPCUAIsCriticalOperation,
+	"Assembly",
 	"CommunityID",
 }
 
@@ -99,7 +100,11 @@ func (o *OPCUA) CSVHeader() []string {
 
 // CSVRecord returns the CSV record for the audit record.
 func (o *OPCUA) CSVRecord() []string {
-	return filter([]string{
+	return filter(o.csvValues())
+}
+
+func (o *OPCUA) csvValues() []string {
+	return []string{
 		formatTimestamp(o.Timestamp),
 		o.SrcIP,
 		o.DstIP,
@@ -131,8 +136,9 @@ func (o *OPCUA) CSVRecord() []string {
 		o.AuthenticationToken,
 		strconv.FormatBool(o.IsSecurityRelevant),
 		strconv.FormatBool(o.IsCriticalOperation),
+		dnp3JSONCell(o.Assembly),
 		o.CommunityID,
-	})
+	}
 }
 
 // Time returns the timestamp associated with the audit record.
@@ -143,9 +149,9 @@ func (o *OPCUA) Time() int64 {
 // JSON returns the JSON representation of the audit record.
 func (o *OPCUA) JSON() (string, error) {
 	// convert unix timestamp from nano to millisecond precision for elastic
-	o.Timestamp /= int64(time.Millisecond)
-
-	return jsonMarshaler.MarshalToString(o)
+	v := *o
+	v.Timestamp /= int64(time.Millisecond)
+	return jsonMarshaler.MarshalToString(&v)
 }
 
 var opcuaMetric = prometheus.NewCounterVec(
@@ -153,12 +159,12 @@ var opcuaMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_OPCUA.String()),
 		Help: Type_NC_OPCUA.String() + " audit records",
 	},
-	fieldsOPCUA[1:],
+	legacyOTLabels(fieldsOPCUA, 1),
 )
 
 // Inc increments the metrics for the audit record.
 func (o *OPCUA) Inc() {
-	opcuaMetric.WithLabelValues(o.CSVRecord()[1:]...).Inc()
+	opcuaMetric.WithLabelValues(legacyOTLabels(o.csvValues(), 1)...).Inc()
 }
 
 // SetPacketContext sets the associated packet context for the audit record.
@@ -215,6 +221,7 @@ func (o *OPCUA) Encode() []string {
 		opcuaEncoder.String(fieldOPCUAAuthenticationToken, o.AuthenticationToken),
 		opcuaEncoder.Bool(o.IsSecurityRelevant),
 		opcuaEncoder.Bool(o.IsCriticalOperation),
+		opcuaEncoder.String("Assembly", o.Assembly.GetStatus()),
 		opcuaEncoder.String("CommunityID", o.CommunityID),
 	})
 }

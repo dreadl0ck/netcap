@@ -21,8 +21,8 @@ package s7comm
 
 import (
 	"encoding/binary"
-	"sync/atomic"
-
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/otframe"
+	"github.com/gopacket/gopacket/layers"
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
@@ -47,39 +47,17 @@ func (s *s7commReader) Decode() {
 		return
 	}
 
-	// Flattened with an index, so a message spanning fragments still parses
-	// while keeping the capture time and direction of the fragment its first
-	// byte arrived in. Concatenating alone loses both.
-	frameData, index := core.Flatten(s.conversation.Data)
-	offset := 0
-
-	for offset < len(frameData)-minTPKTSize {
-		// Check for TPKT header
-		if !s.isTPKTHeader(frameData[offset:]) {
-			offset++
-			continue
+	var iso [2]otframe.ISO
+	var state [2]Assembly
+	otframe.Walk(s.conversation, layers.ScanTPKT, 65535, func(f otframe.Frame) {
+		u, err := iso[f.Side].Feed(f)
+		if err == nil {
+			state[f.Side].Observe(s.conversation, u, true)
 		}
-
-		msg, consumed := s.parseTPKTMessage(frameData[offset:])
-		if msg != nil {
-			msg.SrcIP, msg.DstIP, msg.SrcPort, msg.DstPort = s.conversation.EndpointsAt(index, offset)
-			msg.CommunityID = s.conversation.CommunityID
-			msg.Timestamp, _ = index.At(offset)
-
-			err := Decoder.Writer.Write(msg)
-			if err != nil {
-				s7commLog.Error("failed to write S7Comm record", zap.Error(err))
-			} else {
-				atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
-			}
-		}
-
-		if consumed > 0 {
-			offset += consumed
-		} else {
-			offset++
-		}
-	}
+	}, func(f otframe.Frame, reason string) {
+		iso[f.Side] = otframe.ISO{}
+		state[f.Side].Reset(s.conversation, f, reason)
+	})
 }
 
 // isTPKTHeader checks if the data starts with a valid TPKT header.

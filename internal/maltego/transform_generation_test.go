@@ -203,7 +203,7 @@ func TestGenerateFullMaltegoConfiguration(t *testing.T) {
 
 	// generate entities for gopacket decoders
 	packet.ApplyActionToGoPacketDecoders(func(d *packet.GoPacketDecoder) {
-		createEntity(netcapIdent, d.Layer.String(), d.Description, &count)
+		createWriterEntity(netcapIdent, d.Layer.String(), d.AuditFileBase(), d.Description, &count)
 	})
 
 	// generate stream decoder entities

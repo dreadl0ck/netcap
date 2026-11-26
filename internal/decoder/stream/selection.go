@@ -198,6 +198,9 @@ func configuredDecoder(name string) bool {
 	// Selecting only TLSRecord deliberately leaves the certificate writer nil;
 	// the stream reader must nevertheless remain eligible to frame records.
 	if name == tls.Decoder.GetName() {
+		if c.PacketBACnet && !c.TLSSecrets.Empty() && configuredDecoder("BACnetIP") {
+			return true
+		}
 		for _, d := range []*decoder.AbstractDecoder{tls.RecordDecoder, tls.ClientHelloDecoder, tls.ServerHelloDecoder} {
 			if d.Writer != nil && !decoderListed(c.ExcludeDecoders, d.GetName()) && (c.IncludeDecoders == "" || decoderListed(c.IncludeDecoders, d.GetName())) {
 				return true

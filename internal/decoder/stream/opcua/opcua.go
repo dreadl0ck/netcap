@@ -117,7 +117,7 @@ func canDecodeOPCUA(data []byte) bool {
 	// Message size (little-endian uint32)
 	// Sanity check: size should be at least the header size
 	size := uint32(data[4]) | uint32(data[5])<<8 | uint32(data[6])<<16 | uint32(data[7])<<24
-	if size < minHeaderSize || size > 65536*16 { // Max reasonable message size (1MB)
+	if size < minHeaderSize || size > 16<<20 {
 		return false
 	}
 

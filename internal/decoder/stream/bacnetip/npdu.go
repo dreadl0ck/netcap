@@ -27,7 +27,10 @@ func parseSharedNPDU(msg *types.BACnetIP, data []byte) {
 		msg.NetworkMessageTypeName = getNetworkMessageTypeName(*p.NetworkType)
 		return
 	}
-	a := p.APDU
+	projectApplication(msg, p.APDU)
+}
+
+func projectApplication(msg *types.BACnetIP, a *bacnet.Application) {
 	msg.APDUType, msg.APDUTypeName = int32(a.Type), getAPDUTypeName(a.Type)
 	msg.IsConfirmed = a.Type == 0
 	msg.MoreFollows = a.MoreFollows

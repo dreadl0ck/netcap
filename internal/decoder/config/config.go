@@ -118,6 +118,7 @@ var DefaultConfig = &Config{
 // for the decoders
 // this structure has an optimized field order to avoid excessive padding.
 type Config struct {
+	PacketBACnet           bool              `json:"-" yaml:"-"` // Standard-port BVLC is owned by the packet lane.
 	TorCertificates        *torobserve.Index `json:"-" yaml:"-"`
 	AggregateStore         *aggregate.Store  `json:"-" yaml:"-"`
 	MaxAggregateStateBytes int64

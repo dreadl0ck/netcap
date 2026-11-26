@@ -29,6 +29,7 @@ import (
 	//"github.com/dreadl0ck/netcap/internal/decoder/stream/secret"
 	decoderutils "github.com/dreadl0ck/netcap/internal/decoder/utils"
 	"github.com/dreadl0ck/netcap/internal/netio"
+	"github.com/dreadl0ck/netcap/types"
 )
 
 // errInvalidAbstractDecoder occurs when an abstract decoder name is unknown during initialization.
@@ -37,6 +38,8 @@ var errInvalidAbstractDecoder = errors.New("invalid abstract decoder")
 // DefaultAbstractDecoders contains decoders for custom abstractions
 // that do not represent a specific network protocol.
 var DefaultAbstractDecoders = []core.DecoderAPI{
+	&decoder.AbstractDecoder{Name: "EtherCAT", Type: types.Type_NC_EtherCAT, Description: "EtherCAT datagrams and mailbox transfers"},
+	otStreams[102], otStreams[2404], otStreams[48898],
 	rtp.EventDecoder,
 	file.Decoder,
 	service.Decoder,
@@ -88,6 +91,9 @@ func ApplyActionToAbstractDecodersAsync(action func(api core.DecoderAPI)) {
 
 // InitAbstractDecoders initializes all stream decoders.
 func InitAbstractDecoders(c *config.Config) (decoders []core.DecoderAPI, err error) {
+	for _, d := range otStreams {
+		d.Writer = nil
+	}
 	rtp.EventDecoder.Writer = nil
 	tls.RecordDecoder.Writer = nil
 	tls.ClientHelloDecoder.Writer = nil

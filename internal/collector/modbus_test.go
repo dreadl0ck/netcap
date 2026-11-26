@@ -262,6 +262,12 @@ func writeModbusHuntPCAP(t *testing.T, path string, missingSYN bool) []types.Mod
 				m.MEIType, m.ReadDeviceIDCode = 14, 1
 				m.MessageRole, m.CorrelationStatus = "request", "not_applicable"
 			}
+			if m.MessageRole != "unknown" {
+				m.FunctionName = map[int32]string{6: "Write Single Register", 8: "Diagnostics", 43: "Encapsulated Interface Transport"}[m.FunctionCode]
+			}
+			if m.Exception {
+				m.ExceptionName = "Illegal Data Address"
+			}
 		}
 	}
 	return want

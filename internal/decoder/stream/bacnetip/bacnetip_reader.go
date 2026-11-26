@@ -204,6 +204,9 @@ func (b *bacnetipReader) New(conversation *core.ConversationInfo) core.StreamDec
 
 // Decode parses BACnet/IP messages from the stream.
 func (b *bacnetipReader) Decode() {
+	if decoderconfig.Instance != nil && decoderconfig.Instance.PacketBACnet && (b.conversation.ClientPort == 47808 || b.conversation.ServerPort == 47808) {
+		return
+	}
 	if Decoder.Writer == nil {
 		bacnetipLog.Error("BACnetIP Decoder.Writer is nil")
 		return

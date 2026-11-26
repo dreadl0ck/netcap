@@ -301,6 +301,7 @@ func (c *Collector) Init() (err error) {
 
 	// Wrap decoders with filtering/rules if configured
 	c.WrapWritersWithFiltering()
+	c.initIndustrial()
 
 	c.buildProgressString()
 	c.printlnStdOut("done in", time.Since(start))
