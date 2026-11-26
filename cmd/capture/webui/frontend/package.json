@@ -20,7 +20,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "i18next": "25.10.10",
+    "i18next": "26.3.4",
     "react-i18next": "16.6.6",
     "i18next-icu": "2.7.1",
     "intl-messageformat": "12.2.0",
